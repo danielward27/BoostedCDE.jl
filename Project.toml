@@ -1,0 +1,13 @@
+name = "BoostingMVN"
+uuid = "2750aaff-6e81-4483-ab69-2d3c16a11aa0"
+authors = ["Daniel Ward"]
+version = "0.1.0"
+
+[compat]
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
