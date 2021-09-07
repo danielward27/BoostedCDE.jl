@@ -1,6 +1,5 @@
 using BoostingMVN
 using Test
 
-@testset "BoostingMVN.jl" begin
-    # Write your tests here.
-end
+@testset "base_learners.jl" begin include("base_learners.jl") end
+@testset "utils.jl" begin include("utils.jl") end

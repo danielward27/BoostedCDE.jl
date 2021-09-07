@@ -3,6 +3,14 @@ uuid = "2750aaff-6e81-4483-ab69-2d3c16a11aa0"
 authors = ["Daniel Ward"]
 version = "0.1.0"
 
+[deps]
+ArgCheck = "dce04be8-c92d-5529-be00-80e4d2c0e197"
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
+Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
+
 [compat]
 julia = "1"
 
