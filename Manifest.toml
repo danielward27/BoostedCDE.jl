@@ -181,9 +181,9 @@ uuid = "f6369f11-7733-5829-9624-2563aa707210"
 version = "0.10.19"
 
 [[Functors]]
-git-tree-sha1 = "39007773fd6097164ab537f78d3ac78ad2b8b695"
+git-tree-sha1 = "e2727f02325451f6b24445cd83bfa9aaac19cbe7"
 uuid = "d9f16b24-f501-4c13-a1f2-28368ffc5196"
-version = "0.2.4"
+version = "0.2.5"
 
 [[GPUArrays]]
 deps = ["Adapt", "LinearAlgebra", "Printf", "Random", "Serialization", "Statistics"]

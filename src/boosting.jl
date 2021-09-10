@@ -1,73 +1,80 @@
-
-# Parameters must be vector
-# Base learner corresponding vector
-
-struct BoostingModel  # These could all be passed to the function 
-    init_ϕ::Vector{AbstractFloat}
-    base_learners::Vector{BaseLearner}
-    sl::AbstractFloat
-    selected_base_learners::Vector{BaseLearner} = BaseLearner[]
+"""
+Constructs a BoostingModel that can be trained using [`boost`]@ref
+"""
+@kwdef mutable struct BoostingModel
+    "The base_learners defining a model for each ϕ group."
+    bl_options::Vector{BaseLearner}
+    "Base learners selected during training. Leave to defualt if untrained."
+    bl_selected::Vector{BaseLearner} = BaseLearner[]
+    "Step length."
+    sl::AbstractFloat = 0.1
+    "The indices corresponding to the selected base learners."
     kj::Vector{Tuple{Int64, Int64}} = Tuple{Int64, Int64}[]
-
-    function BoostingModel(
-        init_ϕ, base_learners, sl,
-        selected_base_learners, kj)
-        @argcheck length(init_ϕ) == length(base_learners)
-        return new(init_ϕ, base_learners, sl, selected_base_learners, kj)
+    "The loss after each iteration."
+    lossₘ::Vector{AbstractFloat} = Vector{AbstractFloat}[]
 end
 
 
-BoostingModel
+function predict(model::BoostingModel, init_ϕ::Abstractϕ, x::AbstractMatrix{Float64})
+    @unpack selected_base_learners, sl = model
+    N = size(x, 1)
 
-function boost(model::BoostingModel, x, θ, loss, m_max, sl=0.1)
-    """
-    Assume centred variables for now. Then original guess can be standard normal
-        base_learner_array should match size of parameters ϕ×N
-    """
-    @unpack init_ϕ, base_learners, sl, selected_base_learners, kj = model
-    @argcheck length(selected_base_learners) == 0  # TODO We could support further training of pretrained models.
-    @argcheck length(kj)  == 0
-    ϕ = repeat(ϕ_init', size(x, 1)) 
+    ϕ = init_ϕ(model)  # This could very well be a feature of 
+    for k in 1:length(selected_base_learners)
+        û = predict(selected_base_learners, θ)
 
-    @assert size(ϕ) == (n, K)  "ϕ_init should be defined for all data points."
-    
-    bbl_vec = BestBaseLearner[]  # Best base learner vector
-    for m in 1:m_max
-        u = -gradient(() -> loss(x, ϕ), params(ϕ))[ϕ]
-        best_loss = Inf
-        best_bl = nothing
-        
-        for k in 1:length(base_learners)  # Loop over ϕ
-            uₖ = u[:, k]
-            bl = base_learner_array[k]
+    end
+
+end
+
+
+"""
+Assume centred variables for now. Then original guess can be standard normal
+    base_learner_array should match size of parameters ϕ×N
+"""
+function boost!(
+    model::BoostingModel,
+    θ::Matrix{Float64},
+    x::Matrix{Float64},
+    init_ϕ::Vector{AbstractOuput}
+    loss::Function,
+    steps::Int)
+    @unpack bl_options, bl_selected, sl, selected_base_learners, kj, lossₘ = model
+    @argcheck size(θ, 1) == size(x, 1)
+    @argcheck length(Flux.params(init_ϕ)) == length(bl_options)
+
+    ϕ = copy(init_ϕ)
+    best = (loss = loss(ϕ, x), bl = nothing, kj = nothing)
+
+    for m in 1:steps
+        u = -gradient(() -> loss(ϕ, x), params(ϕ))[ϕ]
+
+        ϕ_flat, re = Flux.destructure(ϕ)
+        models_flat = Flux.destructure(models)
+        ϕ_params = [params(ϕᵢ) for ]  # destructure parameters and models into vector.
+
             
-            for j in 1:size(θ, 2)
-                fit!(bl, θ[:, j], uₖ)
-                ûₖ = predict(bl, θ[:, j])
-                ϕ_proposed = copy(ϕ)
+        for k in 1:length(bl_options)  # Loop over ϕ groups then over ϕ
+            blₖ = base_learner_array[k]
+            
+            for j in 1:size(θ, 2)  # Loop over simulator parameters
+                fit!(blₖ, θ[:, j], u[:, k])
+                ûₖ = predict(blₖ, θ[:, j])
+                ϕ_proposed = copy(ϕ)  # how to update
                 ϕ_proposed[:, k] = ϕ_proposed[:, k] + sl*ûₖ
-                lossⱼ = sum(loss(x, ϕ_proposed))
+                lossⱼ = loss(x, ϕ_proposed)
 
                 if lossⱼ < best_loss
-                    
-                    best_bl = BestBaseLearner(deepcopy(bl), lossⱼ, ûₖ, (k, j))     # TODO Can we get away with just copy? Maybe we need deepcopy as mutable β will change?
+                    best = (loss = lossⱼ, bl = deepcopy(blₖ), kj = (k, j))
+                    ϕ = ϕ_proposed
                 end
             end
+
+            push!(selected_base_learners, best.bl)  # TODO Check if push! limits performance (probably shouldn't?)
+            push!(kj, best.kj)
+            push!(lossₘ, best.loss)
         end
-        push!(bbl_vec, best_bl)
     end
-    return bbl_vec
+    return model
 end
-
-function negative_gaussian_likelihood_loss(x, ϕ)
-    N = size(x,1)
-    idx = size(ϕ, 2) ÷ 2
-    μs = @view ϕ[:, idx]
-    σs = @view ϕ[idx + 1, end]
-    l = [logprob(MvNormal(μ[i, :], σ[i, :]), x[i, :]) for i in 1:N]
-    return -l
-end
-
-
-
 
