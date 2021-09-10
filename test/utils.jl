@@ -1,4 +1,4 @@
-using BoostingMVN: triangind
+using BoostedCDE: triangind
 using Test
 using LinearAlgebra
 

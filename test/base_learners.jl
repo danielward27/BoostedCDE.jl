@@ -1,5 +1,5 @@
 using Test
-using BoostingMVN
+using BoostedCDE
 
 @testset "PolynomialBaseLearner" begin
     x = 1:10

@@ -1,5 +1,5 @@
-using BoostingMVN, Test, Distributions, Random
-import BoostingMVN: gaussian_simulator
+using BoostedCDE, Test, Distributions, Random
+import BoostedCDE: gaussian_simulator
 
 @testset "gaussian simulator" begin
     θv = rand(3)

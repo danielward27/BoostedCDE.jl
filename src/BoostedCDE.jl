@@ -1,4 +1,4 @@
-module BoostingMVN
+module BoostedCDE
 
 import Base.@kwdef
 using Flux
@@ -16,7 +16,7 @@ include("utils.jl")
 include("tasks.jl")
 include("parameters.jl")
 include("base_learners.jl")
-include("boosting.jl")
+include("boost.jl")
 include("losses.jl")
 
 export BaseLearner, ConstBaseLearner, PolynomialBaseLearner, fit!, predict

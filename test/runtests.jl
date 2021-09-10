@@ -1,4 +1,4 @@
-using BoostingMVN
+using BoostedCDE
 using Test
 
 @testset "base_learners.jl" begin include("base_learners.jl") end

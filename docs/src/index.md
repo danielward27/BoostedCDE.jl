@@ -1,14 +1,14 @@
 ```@meta
-CurrentModule = BoostingMVN
+CurrentModule = BoostedCDE
 ```
 
-# BoostingMVN
+# BoostedCDE
 
-Documentation for [BoostingMVN](https://github.com/danielward27/BoostingMVN.jl).
+Documentation for [BoostedCDE](https://github.com/danielward27/BoostedCDE.jl).
 
 ```@index
 ```
 
 ```@autodocs
-Modules = [BoostingMVN]
+Modules = [BoostedCDE]
 ```
