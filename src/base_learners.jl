@@ -30,9 +30,9 @@ Base learner used at initialization to predict a constant value. Additional
 arguments can be provided to fit! for consistency with other base learners but
 these are ignored.
 """
-struct ConstBaseLearner <: BaseLearner
+struct ConstBaseLearner{T<:Tuple{Vararg{AbstractVector{Real}}}} <: BaseLearner
     "The constant value to be returned."
-    ϕ::Abstractϕ
+    ϕ::T
 end
 
 function fit!(base_learner::ConstBaseLearner,  _::AbstractVector{Real}, _::AbstractVector{Real})

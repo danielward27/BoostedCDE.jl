@@ -23,9 +23,9 @@ export BaseLearner, ConstBaseLearner, PolynomialBaseLearner, fit!, predict
 
 export BoostingModel, boost!
 
-export triangular_to_vec, vec_to_triangular, μ_and_cholesky_to_vec, vec_to_μ_and_cholesky
+export triangular_to_vec, vec_to_triangular #, μ_and_cholesky_to_vec, vec_to_μ_and_cholesky
 
-export MvnCholeskyϕ, Abstractϕ
+# export MvnCholeskyϕ, Abstractϕ
 
 export mvn_loss
 

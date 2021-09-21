@@ -1,4 +1,4 @@
-using BoostedCDE: triangind
+using BoostedCDE
 using Test
 using LinearAlgebra
 
@@ -14,17 +14,18 @@ using LinearAlgebra
     @test vec_to_triangular(expected_vec, :L) == lower
     @test_throws ArgumentError vec_to_triangular(expected_vec, :Z) == lower
 
-    μ = [1,2,3]
-    a = rand(3,3); a = a'a + I
-    C = cholesky(a)
+    # TODO Remove below?
+    # μ = [1,2,3]
+    # a = rand(3,3); a = a'a + I
+    # C = cholesky(a)
 
-    ϕ = μ_and_cholesky_to_vec(μ, C)
-    μ2, C2 = vec_to_μ_and_cholesky(ϕ)
-    @test μ ≈ μ2
-    @test C.U ≈ C2.U
-    @test C.L ≈ C2.L
+    # ϕ = μ_and_cholesky_to_vec(μ, C)
+    # μ2, C2 = vec_to_μ_and_cholesky(ϕ)
+    # @test μ ≈ μ2
+    # @test C.U ≈ C2.U
+    # @test C.L ≈ C2.L
 
-    @test triangind(3, :U) == [1,4,5,7,8,9]
-    @test triangind(3, :L) == [1,2,3,5,6,9]
+    # @test triangind(3, :U) == [1,4,5,7,8,9]
+    # @test triangind(3, :L) == [1,2,3,5,6,9]
 end
 
