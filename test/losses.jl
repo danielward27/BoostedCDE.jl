@@ -11,6 +11,6 @@ using Distributions
     Σ = inv(U_tri'U_tri)
     ϕ = [(μ1, U), (μ2, U)]
     l = mvn_loss(ϕ, [0. 0; 0 0])
-    expected = -mean([logpdf(MvNormal(μ, 1), zeros(2)) for μ in (μ1, μ2)])
+    expected = -mean([logpdf(MvNormal(μ, I), zeros(2)) for μ in (μ1, μ2)])
     @test l ≈ expected
 end
