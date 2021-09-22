@@ -18,16 +18,12 @@ function triangular_to_vec(M::UpperTriangular{T}) where T
     v
 end
 
-function triangular_to_vec(M::LowerTriangular)
-    triangular_to_vec(M')
-end
 
 """
-Constructs an upper `(uplo=:U)` or lower `(uplo=:L)` triangular matrix from a
-vector. Vector should correspond to the upper triangular elements are listed
-columnwise (or equivilently, lower triangular elements listed rowwise).
+Constructs an upper triangular matrix from a vector. Vector should correspond to
+the upper triangular elements listed columnwise.
 """
-function vec_to_triangular(v::AbstractVector{T}, uplo::Symbol=:U) where T
+function vec_to_triangular(v::AbstractVector{T}) where T
     l  = length(v)
     n = (-1 + isqrt(1 + 8l)) ÷ 2
     M = Matrix{T}(undef, n, n)
@@ -39,14 +35,8 @@ function vec_to_triangular(v::AbstractVector{T}, uplo::Symbol=:U) where T
         end
         k += i
     end
-
-    if uplo==:U
-        M = UpperTriangular(M)
-    elseif uplo==:L
-        M = LowerTriangular(M')
-    else
-        throw(ArgumentError("uplo should be U: or L:")) 
-    end
+    
+    return UpperTriangular(M)
 end
 
 # TODO Probably can deprecate all the stuff below?

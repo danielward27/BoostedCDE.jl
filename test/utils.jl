@@ -3,16 +3,11 @@ using Test
 using LinearAlgebra
 
 @testset "Triangular matrices" begin
-    lower = LowerTriangular(reshape(1:2^2, (2,2)))
-    upper = lower'
-    expected_vec = [1,2,4]
+    upper = UpperTriangular(reshape(1:2^2, (2,2)))
+    expected_vec = [1,3,4]
 
-    @test triangular_to_vec(lower) == expected_vec
     @test triangular_to_vec(upper) == expected_vec
-
     @test vec_to_triangular(expected_vec) == upper
-    @test vec_to_triangular(expected_vec, :L) == lower
-    @test_throws ArgumentError vec_to_triangular(expected_vec, :Z) == lower
 
     # TODO Remove below?
     # μ = [1,2,3]
