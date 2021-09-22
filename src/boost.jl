@@ -1,43 +1,46 @@
 
-
-
-
 """
 Constructs a BoostingModel that can be trained using [`boost`]@ref
 """
-@kwdef mutable struct BoostingModel{T1 <: ParamTuple, T2 <: BaseLearnerTuple}
+struct BoostingModel{T1 <: ParamTuple, T2 <: BaseLearnerTuple}   # TODO do we really need a class for this? We could 
+    "Initial ouput parameter predictions. Same for all datapoints."
+    init_ϕ::T1
     "Base_learners matching the sizes of ϕ."
-    base_learners::T1
-    "Base learners selected during training. Leave to defualt if untrained."
-    base_learners_selected::Vector{BaseLearner} = BaseLearner[]  # TODO Vector of abstract type generally not good practice? Could infer union type from base_learners.
-    "Initial ouput parameter predictions."
-    init_ϕ::T2
+    base_learners::T2
     "Step length."
-    sl::Float64 = 0.1
-    "The indices corresponding to the selected base learners."
-    kj::Vector{Tuple{Int64, Int64, Int64}} = Tuple{Int64, Int64, Int64}[]
-    "The loss after each iteration."
-    lossₘ::Vector{Float64} = Vector{Float64}[]
+    sl::Float64
+    "Base learners selected during training. Leave to defualt if untrained."
+    base_learners_selected::Vector{BaseLearner}  # TODO Vector of abstract type generally not good practice? Could infer union type from base_learners.
+    "The indices corresponding to the selected base learners (j=ϕ tuple idx, k=element of ϕ[j], l=θ idx))."
+    jkl::Vector{Tuple{Int64, Int64, Int64}}
+
+    function BoostingModel(init_ϕ, base_learners, sl=0.1)
+        new{typeof(init_ϕ), typeof(base_learners)}(init_ϕ, base_learners, sl, BaseLearner[], Tuple{Int64, Int64, Int64}[])
+    end
 end
 
-# TODO Test that this works at least in the untrained case.
-function predict(model::BoostingModel, x::AbstractMatrix{Float64})
-    @unpack selected_base_learners, sl, init_ϕ, kj = model
-    N = size(x, 1)
-    ϕ = [deepcopy(ϕᵢ) for _ in 1:N]  # TODO this could be allocated on model construction?
 
-    for (bl, (j, k, l)) in zip(selected_base_learners, jkl)
-        ûₖ = predict(bl, θ[:, l])
-        [ϕ[i][j][k] .+= sl*ûₖ[j][k] for i in 1:N]
+
+
+function predict(model::BoostingModel, x::AbstractMatrix{Float64})
+    @unpack base_learners_selected, sl, init_ϕ, jkl = model
+    N = size(x, 1)
+    ϕ = [deepcopy(init_ϕ) for _ in 1:N]
+
+    for (bl, (j, k, l)) in zip(base_learners_selected, jkl)
+        ûⱼₖₗ = predict(bl, θ[:, l])
+        [ϕ[i][j][k] .+= sl*ûⱼₖₗ[i] for i in 1:N]
     end
+
     return ϕ
 end
 
 
 
 """
-Original guess should be sample covariance matrix.
+Original guess should be sample covariance matrix and mean?
 """
+# TODO best if we can just provide a step! function e.g. for easy early stopping etc?
 # function boost!(
 #     model::BoostingModel,
 #     θ::Matrix{Float64},
