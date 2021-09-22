@@ -1,3 +1,5 @@
+const ParamTuple = Tuple{Vararg{AbstractArray{<: Real}}}
+
 # abstract type Abstractϕ end
 
 # Note that all parameters should be defined as vectors (so that they can be mutated).

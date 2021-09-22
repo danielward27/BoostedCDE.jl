@@ -1,7 +1,11 @@
+
+
+
+
 """
 Constructs a BoostingModel that can be trained using [`boost`]@ref
 """
-@kwdef mutable struct BoostingModel{T1 <: Tuple{Vararg{AbstractArray{<: BaseLearner}}}, T2 <: Tuple{Vararg{AbstractArray{<: Real}}}}
+@kwdef mutable struct BoostingModel{T1 <: ParamTuple, T2 <: BaseLearnerTuple}
     "Base_learners matching the sizes of ϕ."
     base_learners::T1
     "Base learners selected during training. Leave to defualt if untrained."

@@ -3,6 +3,7 @@ Base learners are used to predict the negative gradient vector. These must all
 have the methods fit! and predict.
 """
 abstract type BaseLearner end
+const BaseLearnerTuple = Tuple{Vararg{AbstractArray{<: BaseLearner}}}
 
 mutable struct PolynomialBaseLearner <: BaseLearner  # TODO Support precalculating transform and matrix decomposition somehow?
     degree::Int
