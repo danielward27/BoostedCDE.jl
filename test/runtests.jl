@@ -6,5 +6,5 @@ using Test
 @testset "parameters.jl" begin include("parameters.jl") end
 @testset "losses.jl" begin include("losses.jl") end
 @testset "tasks.jl" begin include("tasks.jl") end
-
+@testset "boost.jl" begin include("boost.jl") end
 
