@@ -1,3 +1,6 @@
+"""
+The boosting algorithm, and related functions.
+"""
 
 """
 Constructs a BoostingModel that can be trained using [`boost`]@ref
@@ -15,11 +18,12 @@ struct BoostingModel{T1 <: ParamTuple, T2 <: BaseLearnerTuple}   # TODO do we re
     jkl::Vector{Tuple{Int64, Int64, Int64}}
 
     function BoostingModel(init_ϕ, base_learners, sl=0.1)
-        new{typeof(init_ϕ), typeof(base_learners)}(init_ϕ, base_learners, sl, BaseLearner[], Tuple{Int64, Int64, Int64}[])
+        @argcheck length(init_ϕ) == length(base_learners)
+        @argcheck all(size(blⱼ) == size(ϕⱼ) for (blⱼ, ϕⱼ) in zip(base_learners, init_ϕ))
+        new{typeof(init_ϕ), typeof(base_learners)}(
+            init_ϕ, base_learners, sl, BaseLearner[], Tuple{Int64, Int64, Int64}[])
     end
 end
-
-
 
 
 function predict(model::BoostingModel, x::AbstractMatrix{Float64})
@@ -36,10 +40,7 @@ function predict(model::BoostingModel, x::AbstractMatrix{Float64})
 end
 
 
-
-"""
-Original guess should be sample covariance matrix and mean?
-"""
+# TODO original guess should be sample mean and covariance matrix
 # TODO best if we can just provide a step! function e.g. for easy early stopping etc?
 # function boost!(
 #     model::BoostingModel,
@@ -47,14 +48,13 @@ Original guess should be sample covariance matrix and mean?
 #     x::Matrix{Float64},
 #     loss::Function,
 #     steps::Int)
-#     @unpack base_learners, base_learners_selected, sl, kj, lossₘ, init_ϕ = model
-#     base_learners_tuple = Tuple(getfield(base_learners, f) for f in fieldnames(typeof(base_learners)))
-#     ϕ = deepcopy(init_ϕ)  # TODO Check if copy is sufficient.
-#     ϕ_tuple = Tuple(getfield(ϕ, f) for f in fieldnames(typeof(ϕ)))
+#     @unpack init_ϕ, base_learners, sl, base_learners_selected, jkl = model
+    
+
+#     ϕ = deepcopy(init_ϕ)  # TODO Would copy be sufficient?
+    
 #     @argcheck size(θ, 1) == size(x, 1)
-#     @argcheck base_learners_tuple isa Tuple{Vararg{AbstractArray}}
-#     @argcheck ϕ_tuple isa Tuple{Vararg{AbstractArray}}
-#     @argcheck all(size(b) == size(ϕᵢ) for (b, ϕᵢ) in zip(base_learners_tuple, ϕ_tuple))
+    
 
 #     best = (loss = loss(ϕ, x), bl = nothing, kj = nothing)
 

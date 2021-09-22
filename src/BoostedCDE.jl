@@ -20,7 +20,7 @@ include("base_learners.jl")
 include("boost.jl")
 include("losses.jl")
 
-export BaseLearner, ConstBaseLearner, PolynomialBaseLearner, fit!, predict
+export BaseLearner, ConstBaseLearner, PolyBaseLearner, fit!, predict
 
 export BoostingModel, boost!
 
