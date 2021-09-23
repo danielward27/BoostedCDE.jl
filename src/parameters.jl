@@ -1,4 +1,4 @@
-const ParamTuple = Tuple{Vararg{AbstractArray{<: Real}}}
+const ParamTuple = NamedTuple{Vararg{AbstractArray{<: Real}}}
 
 # abstract type Abstractϕ end
 
