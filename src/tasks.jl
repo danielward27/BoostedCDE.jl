@@ -28,8 +28,8 @@ function gaussian_simulator(
     rng::AbstractRNG,
     θ::AbstractVector{Float64}
     )
-    sds = fill(√0.1, 3)
-    d = MvNormal(θ, sds)
+    sds = fill(√0.1, length(θ))
+    d = MvNormal(θ, Diagonal(sds.^2))
     rand(rng, d)
 end
 
