@@ -7,16 +7,21 @@ function mvn_loss(ϕ::AbstractMatrix{Float64}, x::Matrix{Float64})
     size(ϕ, 1) == size(x, 1) || throw(ArgumentError("length(ϕ) should match size(x,1)"))
     N = size(x, 1)
     l = 0
-    for (ϕᵢ, xᵢ)  in zip(eachrow(ϕᵢ), eachrow(xᵢ))  # TODO Maybe iterating over columns would be better here (column major langauge)
-        μ, U = ϕ[i]
-        U = vec_to_triangular(U)
+    for (ϕᵢ, xᵢ)  in zip(eachrow(ϕ), eachrow(x))  # TODO Maybe iterating over columns would be better here (column major langauge)
+        μ, U = μ_chol_splitter(ϕᵢ)
         Λ = Symmetric(U'U)
         h = Λ*μ
         d = MvNormalCanon(h, Λ)
-        l += logpdf(d, x[i, :])
+        l += logpdf(d, xᵢ)
     end
-    return l/N
+    return -l/N
 end
+
+
+
+
+
+
 
 
 

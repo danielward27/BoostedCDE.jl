@@ -39,6 +39,20 @@ function vec_to_triangular(v::AbstractVector{T}) where T
     return UpperTriangular(M)
 end
 
+
+"""
+Take a flattened mean and traingular matrix and reconstruct it returning a tuple
+"""
+function μ_chol_splitter(ϕᵢ::AbstractVector{Float64})
+    a = 9 + 8*length(ϕᵢ)
+    @argcheck a == isqrt(a)^2
+    idx = (-3 + isqrt(a)) ÷ 2
+    μ = ϕᵢ[1:idx]
+    U = vec_to_triangular(ϕᵢ[idx+1:end])
+    return μ, U
+end
+
+
 # TODO Probably can deprecate all the stuff below?
 # """Get the indices corresponding to the upper or lower triangular elements of a square array of size n×n."""
 # function triangind(n::Int, uplo::Symbol=:U)

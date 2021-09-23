@@ -8,7 +8,6 @@ using Distributions
     μ2 = [1., 1]
     U = [1, 0, 1]
 
-
     U_tri = vec_to_triangular(U)
     Σ = inv(U_tri'U_tri)
     ϕ = [[μ1; U] [μ2; U]]'

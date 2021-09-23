@@ -24,7 +24,7 @@ export BaseLearner, ConstBaseLearner, PolyBaseLearner, fit!, predict
 
 export BoostingModel, boost!
 
-export triangular_to_vec, vec_to_triangular #, μ_and_cholesky_to_vec, vec_to_μ_and_cholesky
+export triangular_to_vec, vec_to_triangular, μ_chol_splitter
 
 export mvn_loss
 
