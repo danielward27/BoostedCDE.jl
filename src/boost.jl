@@ -5,23 +5,23 @@ The boosting algorithm, and related functions.
 """
 Constructs a BoostingModel that can be trained using [`boost`]@ref
 """
-struct BoostingModel{T1 <: ParamTuple, T2 <: BaseLearnerTuple}   # TODO do we really need a class for this? We could 
+struct BoostingModel{T <: Vector{<: BaseLearner}}   # TODO do we really need a class for this? We could 
     "Initial ouput parameter predictions. Same for all datapoints."
-    init_ϕ::T1
-    "Base_learners matching the sizes of ϕ."
-    base_learners::T2
+    init_ϕ::Vector{Float64}
+    "Base_learners matching the length of ϕ."
+    base_learners::T
     "Step length."
     sl::Float64
-    "Base learners selected during training. Leave to defualt if untrained."
+    "Base learners selected during training."
     base_learners_selected::Vector{BaseLearner}  # TODO Vector of abstract type generally not good practice? Could infer union type from base_learners.
     "The indices corresponding to the selected base learners (j=ϕ tuple idx, k=element of ϕ[j], l=θ idx))."
-    jkl::Vector{Tuple{Int64, Int64, Int64}}
+    jk::Vector{Tuple{Int64, Int64}}
 
     function BoostingModel(init_ϕ, base_learners, sl=0.1)
         @argcheck length(init_ϕ) == length(base_learners)
-        @argcheck all(size(blⱼ) == size(ϕⱼ) for (blⱼ, ϕⱼ) in zip(base_learners, init_ϕ))
-        new{typeof(init_ϕ), typeof(base_learners)}(
-            init_ϕ, base_learners, sl, BaseLearner[], Tuple{Int64, Int64, Int64}[])
+        new{typeof(base_learners)}(
+            init_ϕ, base_learners, sl, BaseLearner[],
+            Tuple{Int64, Int64, Int64}[])
     end
 end
 
@@ -32,22 +32,16 @@ training).
 """
 function predict(model::BoostingModel, θ::AbstractMatrix{Float64}, x::AbstractMatrix{Float64})
     @argcheck size(θ, 1) == size(x, 1)
-    @unpack base_learners_selected, sl, init_ϕ, jkl = model
+    @unpack base_learners_selected, sl, init_ϕ, jk = model
     N = size(x, 1)
-    ϕ = [deepcopy(init_ϕ) for _ in 1:N]
+    ϕ = zeros(N, length(init_ϕ)) .+ init_ϕ'
 
-    for (bl, (j, k, l)) in zip(base_learners_selected, jkl)
-        ûⱼₖₗ = predict(bl, θ[:, l])
-        [ϕ[i][j][k] .+= sl*ûⱼₖₗ[i] for i in 1:N]
+    for (bl, (j, k)) in zip(base_learners_selected, jk)
+        ûⱼₖ = predict(bl, θ[:, k])
+        ϕ[:, j] .+= sl*ûⱼₖ
     end
-
     return ϕ
 end
-
-
-# TODO Just shift the gradient inside the loop? Bigger issue ϕ as Vector of tuples is causing issues?
-# Loop over the N, splat the tuple and add the gradients seems the neatest solution?
-
 
 
 # """

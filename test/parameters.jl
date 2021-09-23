@@ -3,11 +3,3 @@ using Test
 using LinearAlgebra
 using Flux
 
-# TODO Remove if tuple method works.
-# @testset "MvnCholeskyϕ" begin
-#     μ = [1, 2.]
-#     L = LowerTriangular([1. 0; 3 4])
-#     ϕ = MvnCholeskyϕ(μ, L)
-#     @test Flux.params(ϕ) == Flux.Params([μ, [1.,3,4]])
-# end
-
