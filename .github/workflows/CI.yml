@@ -55,9 +55,9 @@ jobs:
       - run: |
           julia --project=docs -e '
             using Documenter: DocMeta, doctest
-            using BoostingMVN
-            DocMeta.setdocmeta!(BoostingMVN, :DocTestSetup, :(using BoostingMVN); recursive=true)
-            doctest(BoostingMVN)'
+            using BoostedCDE
+            DocMeta.setdocmeta!(BoostedCDE, :DocTestSetup, :(using BoostedCDE); recursive=true)
+            doctest(BoostedCDE)'
       - run: julia --project=docs docs/make.jl
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

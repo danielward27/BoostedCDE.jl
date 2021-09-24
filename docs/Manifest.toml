@@ -8,7 +8,7 @@ version = "0.0.1"
 [[Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 
-[[BoostingMVN]]
+[[BoostedCDE]]
 path = ".."
 uuid = "2750aaff-6e81-4483-ab69-2d3c16a11aa0"
 version = "0.1.0"

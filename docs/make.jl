@@ -1,16 +1,16 @@
-using BoostingMVN
+using BoostedCDE
 using Documenter
 
-DocMeta.setdocmeta!(BoostingMVN, :DocTestSetup, :(using BoostingMVN); recursive=true)
+DocMeta.setdocmeta!(BoostedCDE, :DocTestSetup, :(using BoostedCDE); recursive=true)
 
 makedocs(;
-    modules=[BoostingMVN],
+    modules=[BoostedCDE],
     authors="Daniel Ward",
-    repo="https://github.com/danielward27/BoostingMVN.jl/blob/{commit}{path}#{line}",
-    sitename="BoostingMVN.jl",
+    repo="https://github.com/danielward27/BoostedCDE.jl/blob/{commit}{path}#{line}",
+    sitename="BoostedCDE.jl",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
-        canonical="https://danielward27.github.io/BoostingMVN.jl",
+        canonical="https://danielward27.github.io/BoostedCDE.jl",
         assets=String[],
     ),
     pages=[
@@ -19,6 +19,6 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/danielward27/BoostingMVN.jl",
+    repo="github.com/danielward27/BoostedCDE.jl",
     devbranch="main",
 )
