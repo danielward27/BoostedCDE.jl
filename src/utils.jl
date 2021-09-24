@@ -43,7 +43,7 @@ end
 """
 Take a flattened mean and traingular matrix and reconstruct it returning a tuple
 """
-function μ_chol_splitter(ϕᵢ::AbstractVector{Float64})
+function μ_chol_splitter(ϕᵢ::AbstractVector{<: Real})
     a = 9 + 8*length(ϕᵢ)
     @argcheck a == isqrt(a)^2
     idx = (-3 + isqrt(a)) ÷ 2

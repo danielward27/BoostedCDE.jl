@@ -13,7 +13,7 @@ struct BoostingModel{T <: Vector{<: BaseLearner}}   # TODO do we really need a c
     "Step length."
     sl::Float64
     "Base learners selected during training."
-    base_learners_selected::Vector{BaseLearner}  # TODO Vector of abstract type generally not good practice? Could infer union type from base_learners.
+    base_learners_selected::T
     "The indices corresponding to the selected base learners (j=ϕ tuple idx, k=element of ϕ[j], l=θ idx))."
     jk::Vector{Tuple{Int64, Int64}}
 
@@ -44,36 +44,38 @@ function predict(model::BoostingModel, θ::AbstractMatrix{Float64}, x::AbstractM
 end
 
 
-# """
-# Step the boosting model. Can we have a cached previous prediction? Or multiple dispatch where in one we provide previous prediction?
-# """
-# function step!(model::BoostingModel, θ::Matrix{Float64}, x::Matrix{Float64}, loss::Function)
-#     @unpack init_ϕ, base_learners, sl, base_learners_selected, jkl = model
-#     u = -gradient(() -> loss(ϕ, x), params(ϕ))[ϕ]
+"""
+Step the boosting model, by adding on a single new base model. Can we have a
+cached previous prediction? Or multiple dispatch where in one we provide
+previous prediction?
 
-#     for j in 1:length(base_learners)
-#         for k in 1:length(base_learners[j])
-#             blⱼₖ = base_learners[j][k]
-            
-#             for l in 1:size(θ, 2)  # Loop over simulator parameters
-#                 fit!(blⱼₖ, θ[:, l], u[:, k])  # TODO We may need to copy/deepcopy the models? Unless refitting is always fine?
-#                 ûₖ = predict(blₖ, θ[:, j])
-#                 ϕ_proposed = copy(ϕ)  # how to update
-#                 ϕ_proposed[:, k] = ϕ_proposed[:, k] + sl*ûₖ
-#                 lossⱼ = loss(x, ϕ_proposed)
+In addition to mutating the model, the updated predictions ϕ, and the associated
+loss are returned in a tuple. Or cache them in the model?
+"""
+# TODO Test this.
+function step!(model::BoostingModel, θ::Matrix{Float64}, x::Matrix{Float64}, ϕₘ₋₁::Matrix{Float64}, loss::Function)  # TODO Provide another method, where ϕₘ₋₁ is found through prediction?
+    @unpack base_learners, sl, jk = model
+    u = ForwardDiff.gradient(ϕ -> mvn_loss(ϕ, x), ϕ)::Matrix{Float64}  # N×j
 
-#                 if lossⱼ < best_loss
-#                     best = (loss = lossⱼ, bl = deepcopy(blₖ), kj = (k, j))
-#                     ϕ = ϕ_proposed
-#                 end
-#             end
+    for j in 1:length(base_learners)
+        for k in 1:size(θ, 2)
+            blⱼₖ = deepcopy(base_learners[j])  # TODO I assume deepcopy is unavoidable? Can reduce if we allow refitting??
+            fit!(blⱼₖ, θ[:, k], u[:, j])  
+            ûⱼ = predict(blⱼₖ, θ[:, k])
+            ϕ_proposed = copy(ϕₘ₋₁)
+            ϕ_proposed[:, j] = ϕ_proposed[:, j] + sl*ûⱼ  # TODO clearer notation with u and ûⱼ
+            lossⱼₖ = loss(ϕ_proposed, x)
+            if lossⱼₖ < best_loss
+                best = (bl = deepcopy(blⱼₖ), jk = (j, k),
+                    ϕ = copy(ϕ_proposed), loss = lossⱼₖ)                
+            end
+        end
 
-#         push!(selected_base_learners, best.bl)  # TODO Check if push! limits performance (probably shouldn't?)
-#         push!(kj, best.kj)
-#         push!(lossₘ, best.loss)
-#     end
-
-# end
+        push!(selected_base_learners, best.bl)  # TODO Check if push! limits performance (probably shouldn't?)
+        push!(jk, best.jk)
+        return best.ϕ, best.loss
+    end
+end
 
 
 # # TODO original guess should be sample mean and covariance matrix

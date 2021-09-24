@@ -15,3 +15,7 @@ using Distributions
     expected = -mean([logpdf(MvNormal(μ, I), zeros(2)) for μ in (μ1, μ2)])
     @test l ≈ expected
 end
+
+
+
+

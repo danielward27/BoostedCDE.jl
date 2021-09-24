@@ -2,6 +2,7 @@ module BoostedCDE
 
 import Base.@kwdef
 using Flux
+using ForwardDiff
 using DocStringExtensions
 using Distributions
 using LinearAlgebra
