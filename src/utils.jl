@@ -52,6 +52,20 @@ function μ_chol_splitter(ϕᵢ::AbstractVector{<: Real})
     return μ, U
 end
 
+"""
+Get the multivariate normal distribution from a ϕ vector, where the first
+elements correspond to the mean, and the remaining elements correspond to the
+upper triangular elements of the cholesky decomposition of the precision matrix,
+listed columnwise.
+"""
+function mvn_d_from_ϕ(ϕᵢ::AbstractVector{<: Real})
+    μ, U = μ_chol_splitter(ϕᵢ)
+    Λ = Symmetric(U'U)
+    h = Λ*μ
+    return MvNormalCanon(h, Λ)
+end
+
+
 
 # TODO Probably can deprecate all the stuff below?
 # """Get the indices corresponding to the upper or lower triangular elements of a square array of size n×n."""

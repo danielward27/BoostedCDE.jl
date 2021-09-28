@@ -12,6 +12,7 @@ using StatsBase
 using StatsBase: mean
 using Random
 using Random: default_rng
+using UnPack
 
 
 include("utils.jl")
@@ -23,7 +24,7 @@ include("losses.jl")
 
 export BaseLearner, ConstBaseLearner, PolyBaseLearner, fit!, predict
 
-export BoostingModel, boost!
+export BoostingModel, boost!, step!
 
 export triangular_to_vec, vec_to_triangular, μ_chol_splitter
 

@@ -18,16 +18,11 @@ function mvn_loss(ϕ::AbstractMatrix{<: Real}, x::AbstractMatrix{Float64})
     N = size(x, 1)
     batch_loss = 0.
     for (ϕᵢ, xᵢ)  in zip(eachrow(ϕ), eachrow(x))
-        μ, U = μ_chol_splitter(ϕᵢ)
-        Λ = Symmetric(U'U)
-        h = Λ*μ
-        d = MvNormalCanon(h, Λ)
+        d = mvn_d_from_ϕ(ϕᵢ)
         batch_loss += -logpdf(d, xᵢ)
     end
     return batch_loss/N
 end
-
-
 
 
 
@@ -57,3 +52,4 @@ end
 # for i in 1:N
 # end
 # return agg(-l)
+
