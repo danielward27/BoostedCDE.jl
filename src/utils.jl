@@ -2,7 +2,7 @@
 """
 Convert triangular matrix to vector. This uses the convention that the upper
 triangular elements are listed columnwise (or equivilently, lower triangular
-elements listed rowwise).
+elements listed rowwise). $(SIGNATURES)
 """
 function triangular_to_vec(M::UpperTriangular{T}) where T
     n = size(M, 1)
@@ -21,7 +21,7 @@ end
 
 """
 Constructs an upper triangular matrix from a vector. Vector should correspond to
-the upper triangular elements listed columnwise.
+the upper triangular elements listed columnwise. $(SIGNATURES)
 """
 function vec_to_triangular(v::AbstractVector{T}) where T
     l  = length(v)
@@ -41,7 +41,8 @@ end
 
 
 """
-Take a flattened mean and traingular matrix and reconstruct it returning a tuple
+Take a flattened vector and triangular matrix and reconstruct it returning a
+tuple. $(SIGNATURES)
 """
 function μ_chol_splitter(ϕᵢ::AbstractVector{<: Real})
     a = 9 + 8*length(ϕᵢ)
@@ -51,48 +52,3 @@ function μ_chol_splitter(ϕᵢ::AbstractVector{<: Real})
     U = vec_to_triangular(ϕᵢ[idx+1:end])
     return μ, U
 end
-
-"""
-Get the multivariate normal distribution from a ϕ vector, where the first
-elements correspond to the mean, and the remaining elements correspond to the
-upper triangular elements of the cholesky decomposition of the precision matrix,
-listed columnwise.
-"""
-function mvn_d_from_ϕ(ϕᵢ::AbstractVector{<: Real})
-    μ, U = μ_chol_splitter(ϕᵢ)
-    Λ = Symmetric(U'U)
-    h = Λ*μ
-    return MvNormalCanon(h, Λ)
-end
-
-
-
-# TODO Probably can deprecate all the stuff below?
-# """Get the indices corresponding to the upper or lower triangular elements of a square array of size n×n."""
-# function triangind(n::Int, uplo::Symbol=:U)
-#     uplo ∈ [:U, :L] || throw(ArgumentError("uplo should be :U or :L."))
-#     l = n*(n + 1) ÷ 2
-#     indices = Vector{Int64}(undef, l)
-#     k = 1
-#     for i in 1:n
-#         for j in 1:i
-#             indices[k] = uplo == :U ? n*(i-1) + j : n*(j-1) + i
-#             k +=1
-#         end
-#     end
-#     sort(indices)
-# end
-
-# function μ_and_cholesky_to_vec(μ::AbstractVector, C::Cholesky)  # Upper or lower Triangular type?
-#     [μ; triangular_to_vec(C.U)]
-# end
-
-# function vec_to_μ_and_cholesky(flattened_ϕ::AbstractVector)
-#     k = length(flattened_ϕ)
-#     l = (-3 + isqrt(3^2 + 8k)) ÷ 2  # Quadratic formula
-#     μ = flattened_ϕ[1:l]
-#     U = vec_to_triangular(flattened_ϕ[l+1:end])
-#     U = Cholesky(U, :U, 0)
-#     return μ, U
-# end
-

@@ -13,19 +13,47 @@ more detail.
 Negative log-probability of x using vector of parameters ϕ to parameterise the
 means and cholesky decomposition of the normal distribution.
 """
-function mvn_loss(ϕ::AbstractMatrix{<: Real}, x::AbstractMatrix{Float64})
+# function mvn_loss(ϕ::AbstractMatrix{<: Real}, x::AbstractMatrix{Float64})
+#     @argcheck size(ϕ, 1) == size(x, 1)
+#     N = size(x, 1)
+#     batch_loss = 0.
+#     for (ϕᵢ, xᵢ)  in zip(eachrow(ϕ), eachrow(x))
+#         d = mvn_d_from_ϕ(ϕᵢ)
+#         batch_loss += -logpdf(d, xᵢ)
+#     end
+#     return batch_loss/N
+# end
+
+"""
+Get the multivariate normal distribution from a ϕ vector, where the first
+elements correspond to the mean, and the remaining elements correspond to the
+upper triangular elements of the cholesky decomposition of the precision matrix,
+listed columnwise.
+"""
+function mvn_d_from_ϕ(ϕᵢ::AbstractVector{<: Real})
+    μ, U = μ_chol_splitter(ϕᵢ)
+    Λ = Symmetric(U'U)
+    h = Λ*μ
+    return MvNormalCanon(h, Λ)
+end
+
+function canonical_mvnormal_logpdf(ϕᵢ::AbstractVector{<: Real}, x::AbstractVector{Float64})
+    μ, U = μ_chol_splitter(ϕᵢ)
+    Λ = Symmetric(U'U)
+    d = size(Λ, 1)
+    log_det_Σ = -2*sum(log.(diag(U)))
+    -(1/2)*(d*log(2π) + log_det_Σ + (x-μ)'Λ*(x-μ))
+end
+
+function mvn_loss2(ϕ::AbstractMatrix{<: Real}, x::AbstractMatrix{Float64})
     @argcheck size(ϕ, 1) == size(x, 1)
     N = size(x, 1)
     batch_loss = 0.
     for (ϕᵢ, xᵢ)  in zip(eachrow(ϕ), eachrow(x))
-        d = mvn_d_from_ϕ(ϕᵢ)
-        batch_loss += -logpdf(d, xᵢ)
+        batch_loss += -canonical_mvnormal_logpdf(ϕᵢ, xᵢ)
     end
     return batch_loss/N
 end
-
-
-
 
 
 

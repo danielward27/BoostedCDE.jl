@@ -58,12 +58,12 @@ function step!(
 
     local best_bl, best_jk, best_ϕ
     best_loss = Inf
-
+    θ_cols = eachcol(θ)
     for j in 1:length(base_learners)
-        for k in 1:size(θ, 2)  # TODO how to cache poly_θ decomposition? Tricky as base learners may have different transformations, and each is fitted for all θ? Deepcopy could also complicate things. Restricting to Basis functions would provide a cleaner interface? How to handle regularisation still need to be careful. Maybe just an optional transformation or something? Maybe the vector of vectors aproach would allow more optimization? as you can assign the same base learner to a large number of parameters.  We need to cache k results such that each parameter transformation will be remembered after m=1, this would require k to be passed as an argument maybe?. Alteratively, we could try Memoize.jl?
-            blⱼₖ = deepcopy(base_learners[j])
-            fit!(blⱼₖ, θ[:, k], u[:, j])
-            ûⱼ = predict(blⱼₖ, θ[:, k])
+        blⱼₖ = base_learners[j]
+        for (k, θₖ) in enumerate(θ_cols)
+            fit!(blⱼₖ, θₖ, u[:, j])
+            ûⱼ = predict(blⱼₖ, θₖ)
             ϕ_proposed = copy(ϕₘ)
             ϕ_proposed[:, j] = ϕ_proposed[:, j] + sl*ûⱼ
             lossⱼₖ = loss(ϕ_proposed, x)

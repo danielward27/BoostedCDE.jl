@@ -16,6 +16,3 @@ using Distributions
     @test l ≈ expected
 end
 
-
-
-

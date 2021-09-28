@@ -32,32 +32,51 @@ end
 end
 
 
-# function linear_θ_to_ϕ_map(θ::Matrix{Float64})  # Deterministic mapping to distributional parameters
-#     ϕ = Matrix{Float64}(undef, size(θ))
-#     [ϕ[:, k] = k*θ[:, k] .+ k for k in 1:size(θ, 2)]
-#     ϕ
-# end
+function linear_θ_to_ϕ_map(θ::Matrix{Float64})  # Deterministic mapping to distributional parameters
+    ϕ = Matrix{Float64}(undef, size(θ))
+    [ϕ[:, k] = k*θ[:, k] .+ k for k in 1:size(θ, 2)]
+    ϕ
+end
 
-# θ_true = [1. 2 3 4 5]
-# @test linear_θ_to_ϕ_map(θ_true) ≈ [2 6 12 20 30]
-# ϕ_true = linear_θ_to_ϕ_map(θ_true)
-# d_true = BoostedCDE.mvn_d_from_ϕ(vec(ϕ_true))
+ϕ_obs = linear_θ_to_ϕ_map(θ_true)
+d_obs = BoostedCDE.mvn_d_from_ϕ(vec(ϕ_true))
 # μ_true, Σ_true = mean(d_true), cov(d_true)
 
+n = 500
+θ = rand(n, 5)
+ϕ_true = linear_θ_to_ϕ_map(θ)
+x = Matrix{Float64}(undef, n, 2)
+for (i, ϕᵢ) in enumerate(eachrow(ϕ_true))
+    d = BoostedCDE.mvn_d_from_ϕ(ϕᵢ)
+    x[i, :] = rand(d)
+end
 
-# θ = rand(100, 5)
-# ϕ = linear_θ_to_ϕ_map(θ)
-# x = Matrix{Float64}(undef, 100, 2)
-# for (i, ϕᵢ) in enumerate(eachrow(ϕ))
-#     d = BoostedCDE.mvn_d_from_ϕ(ϕᵢ)
-#     x[i, :] = rand(d)
-# end
+bl = fill(PolyBaseLearner(12), length(init_ϕ)) # TODO Copy behaviour?
+model = BoostingModel(ones(5), bl; sl=100)
 
-# bl = fill(PolyBaseLearner(1), length(init_ϕ))
-# model = BoostingModel(ones(5), bl; sl=20)
-# ϕₘ, loss = boost!(model, θ, x, loss=mvn_loss, steps=100)
-# loss[end]
 
+degree = 10
+bl = fill(PolyBaseLearner(degree), length(init_ϕ)) # TODO Copy behaviour?
+model = BoostingModel(ones(5), bl; sl=100)
+@profview boost!(model, θ, x, loss=mvn_loss, steps=3)
+
+
+bl = fill(PolyBaseLearner(degree, use_cache=false), length(init_ϕ)) # TODO Copy behaviour?
+model = BoostingModel(ones(5), bl; sl=100)
+@btime boost!(model, θ, x, loss=mvn_loss, steps=3) seconds = 0.5
+
+
+using BenchmarkTools
+@btime boost!($model, $θ, $x, loss=$mvn_loss; steps=50)
+
+
+loss[end]
+
+@profile boost!(model, θ, x, loss=mvn_loss, steps=200)
+
+# Step length scaled by n for some reason?
+
+true_model_loss = mvn_loss(ϕ_true, x)
 # # Why does a higher step size perform better?
 
 

@@ -1,6 +1,7 @@
 """
 Base learners are used to predict the negative gradient vector. These must all
-have the methods fit! and predict.
+have the methods fit! and predict. Note that the same model is used multiple,
+so it must be safe to call the fit! method multiple times with different data.
 """
 abstract type BaseLearner end
 
