@@ -54,7 +54,7 @@ function step!(
     ϕₘ::Matrix{Float64},
     loss::Function)
     @unpack base_learners, base_learners_selected, sl, jk = model
-    u = -ForwardDiff.gradient(ϕₘ -> mvn_loss(ϕₘ, x), ϕₘ)::Matrix{Float64}  # N×j
+    u = -ReverseDiff.gradient(ϕₘ -> mvn_loss(ϕₘ, x), ϕₘ)::Matrix{Float64}  # N×j
 
     local best_bl, best_jk, best_ϕ
     best_loss = Inf
