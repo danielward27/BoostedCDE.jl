@@ -91,7 +91,7 @@ function boost!(
     x::Matrix{Float64};
     loss::Function,
     steps::Int)
-    ϕₘ = predict(model, θ, x)  # ϕ₀ if untrained
+    ϕₘ = predict(model, θ)  # ϕ₀ if untrained
     losses = zeros(steps)
     for m in 1:steps
         ϕₘ, lossₘ = step!(model, θ, x, ϕₘ, loss)
@@ -99,55 +99,4 @@ function boost!(
     end
     (ϕₘ = ϕₘ, loss=losses)
 end
-
-
-
-# function boost!(
-#     model::BoostingModel,
-#     θ::Matrix{Float64},
-#     x::Matrix{Float64},
-#     loss::Function,
-#     steps::Int)
-#     @unpack init_ϕ, base_learners, sl, base_learners_selected, jkl = model
-    
-
-#     ϕ = deepcopy(init_ϕ)  # TODO Would copy be sufficient?
-    
-#     @argcheck size(θ, 1) == size(x, 1)
-    
-
-#     best = (loss = loss(ϕ, x), bl = nothing, kj = nothing)
-
-#     for m in 1:steps
-#         u = -gradient(() -> loss(ϕ, x), params(ϕ))[ϕ]
-
-#         ϕ_flat, re = Flux.destructure(ϕ)
-#         models_flat = Flux.destructure(models)
-#         ϕ_params = [params(ϕᵢ) for ]  # destructure parameters and models into vector.
-
-            
-#         for k_outer in 1:length(base_learners)  # Loop over ϕ groups then over ϕ
-#             for k_inner in dsads
-#                 blₖ = base_learner_array[k]
-                
-#                 for j in 1:size(θ, 2)  # Loop over simulator parameters
-#                     fit!(blₖ, θ[:, j], u[:, k])
-#                     ûₖ = predict(blₖ, θ[:, j])
-#                     ϕ_proposed = copy(ϕ)  # how to update
-#                     ϕ_proposed[:, k] = ϕ_proposed[:, k] + sl*ûₖ
-#                     lossⱼ = loss(x, ϕ_proposed)
-
-#                     if lossⱼ < best_loss
-#                         best = (loss = lossⱼ, bl = deepcopy(blₖ), kj = (k, j))
-#                         ϕ = ϕ_proposed
-#                     end
-#                 end
-
-#             push!(selected_base_learners, best.bl)  # TODO Check if push! limits performance (probably shouldn't?)
-#             push!(kj, best.kj)
-#             push!(lossₘ, best.loss)
-#         end
-#     end
-#     return model
-# end
 

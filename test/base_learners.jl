@@ -1,12 +1,17 @@
 using Test
 using BoostedCDE
+using BenchmarkTools
 
-# TODO USew with debugging code from the repl https://www.julia-vscode.org/docs/stable/userguide/debugging/
-bl = PolyBaseLearner(2; use_cache=true)
-@enter fit!(bl, x, y)
-ŷ = predict(bl, x)
-@test ŷ ≈ y
-@test bl.β ≈ [1,2,3]
+function check_cache_speedup(use_cache::Bool)
+    bl = PolyBaseLearner(2; use_cache)
+    u = rand(100)
+    for i in 1:5
+        θₖ = rand(100)
+        for i in 1:100
+            fit!(bl, θₖ, u)
+        end
+    end
+end
 
 @testset "PolyBaseLearner" begin
     x = 1:10
@@ -24,41 +29,11 @@ ŷ = predict(bl, x)
     ŷ = predict(bl, x)
     @test ŷ ≈ y
     @test bl.β ≈ [1,2,3]
+
+    t1 = @benchmark check_cache_speedup($true) seconds = 0.1
+    t2 = @benchmark check_cache_speedup($false) seconds = 0.1
+    mean(x) = sum(x)/length(x)
+    speedup = mean(t2.times)/mean(t1.times)
+    @test speedup > 2.
 end
 
-
-function check_cache_speedup(
-    θ::Matrix{Float64},
-    u::Vector{Float64};
-    use_cache::Bool = true)
-    bl = PolyBaseLearner(2; use_cache)
-    for i in 1:100
-        for θₖ in eachcol(θ)
-            fit!(bl, θₖ, u)
-        end
-    end            
-end
-
-
-using BenchmarkTools
-
-@btime check_cache_speedup($rand(1000, 10), $rand(1000), use_cache=$true)
-
-@btime check_cache_speedup($rand(1000, 10), $rand(1000), use_cache=$true)
-
-
-@testset "PolyBaseLearner cache speedup" begin
-    θ = rand(1000, 3)
-    for col in eachcol
-
-    
-
-end
-
-
-
-
-
-
-# Test is caching actually speeds up results?
-# We can probably use IdDict
