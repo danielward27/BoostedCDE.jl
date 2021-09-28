@@ -28,7 +28,7 @@ export BoostingModel, boost!, step!
 
 export triangular_to_vec, vec_to_triangular, μ_chol_splitter
 
-export mvn_loss
+export mvn_loss, mvn_d_from_ϕ
 
 export gaussian_simulator
 
