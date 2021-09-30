@@ -16,6 +16,7 @@ using UnPack
 
 
 include("utils.jl")
+include("vectorize.jl")
 include("tasks.jl")
 include("parameters.jl")
 include("base_learners.jl")

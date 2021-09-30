@@ -40,15 +40,3 @@ function vec_to_triangular(v::AbstractVector{T}) where T
 end
 
 
-"""
-Take a flattened vector and triangular matrix and reconstruct it returning a
-tuple. $(SIGNATURES)
-"""
-function μ_chol_splitter(ϕᵢ::AbstractVector{<: Real})
-    a = 9 + 8*length(ϕᵢ)
-    @argcheck a == isqrt(a)^2
-    idx = (-3 + isqrt(a)) ÷ 2
-    μ = ϕᵢ[1:idx]
-    U = vec_to_triangular(ϕᵢ[idx+1:end])
-    return μ, U
-end

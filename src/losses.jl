@@ -10,23 +10,24 @@ more detail.
 """
 
 function loss(
-    _::MeanCholeskyMvn,
+    t::Type{MeanCholeskyMvn},
     ϕ::AbstractMatrix{<: Real},
     x::AbstractMatrix{Float64})
     @argcheck size(ϕ, 1) == size(x, 1)
     batch_loss = 0.
 
     for (ϕᵢ, xᵢ)  in zip(eachrow(ϕ), eachrow(x))  # TODO time with column major opimized version?
-        batch_loss += _loss(_, ϕᵢ, xᵢ)
+        batch_loss += _loss(t, ϕᵢ, xᵢ)
     end
     return batch_loss/size(x, 1)
 end
 
 function _loss(
-    _::MeanCholeskyMvn,
+    t::Type{MeanCholeskyMvn},
     ϕᵢ::AbstractVector{<: Real},
     xᵢ::AbstractVector{Float64})
-    μ, U = get_parameters(_, ϕᵢ)
+    ϕ = unvectorize(t, ϕᵢ)
+    @unpack μ, U = ϕ
     Λ = Symmetric(U'U)
     h = Λ*μ
     d = MvNormalCanon(h, Λ)

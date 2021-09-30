@@ -3,7 +3,7 @@ The boosting algorithm, and related functions.
 """
 
 """
-Constructs a BoostingModel that can be trained using [`boost`]@ref
+Constructs a BoostingModel that can be trained using [`boost`](@ref)
 """
 struct BoostingModel{T <: Vector{<: BaseLearner}}   # TODO do we really need a class for this? We could 
     "Initial ouput parameter predictions. Same for all datapoints."
