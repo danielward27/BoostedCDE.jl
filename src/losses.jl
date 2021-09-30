@@ -1,13 +1,39 @@
 """
-Loss functions. The loss function is differentiated with ForwardDiff.jl. It
+Loss functions. The loss function is differentiated with ReverseDiff.jl. It
 should take a two matrices each with n rows (number of
 simulations/observations): ϕ contains the distributional parameters, and x
 contains the observed/simulated points. The loss function should return a single
 value i.e. the loss should be accumulated over the batch. Note ForwardDiff has
 some requirements to be compatible, e.g. too strict types such as enforcing
-ϕ::AbstractMatrix{Float64}, will not work. See ForwardDiff documentation for
+ϕ::AbstractMatrix{Float64}, will not work. See ReverseDiff documentation for
 more detail.
 """
+
+function loss(
+    _::MeanCholeskyMvn,
+    ϕ::AbstractMatrix{<: Real},
+    x::AbstractMatrix{Float64})
+    @argcheck size(ϕ, 1) == size(x, 1)
+    batch_loss = 0.
+
+    for (ϕᵢ, xᵢ)  in zip(eachrow(ϕ), eachrow(x))  # TODO time with column major opimized version?
+        batch_loss += _loss(_, ϕᵢ, xᵢ)
+    end
+    return batch_loss/size(x, 1)
+end
+
+function _loss(
+    _::MeanCholeskyMvn,
+    ϕᵢ::AbstractVector{<: Real},
+    xᵢ::AbstractVector{Float64})
+    μ, U = get_parameters(_, ϕᵢ)
+    Λ = Symmetric(U'U)
+    h = Λ*μ
+    d = MvNormalCanon(h, Λ)
+    return -logpdf(d, xᵢ)
+end
+
+
 
 """
 Negative log-probability of x using vector of parameters ϕ to parameterise the
