@@ -14,23 +14,25 @@ using Random
 using Random: default_rng
 using UnPack
 
-
 include("utils.jl")
-include("vectorize.jl")
-include("tasks.jl")
-include("parameters.jl")
-include("base_learners.jl")
-include("boost.jl")
-include("losses.jl")
+export triangular_to_vec, vec_to_triangular
 
+include("parameters.jl")
+export MeanCholeskyMvn
+
+include("vectorize.jl")
+export vectorize, unvectorize, unvectorize_like
+
+include("tasks.jl")
+export gaussian_simulator
+
+include("base_learners.jl")
 export BaseLearner, ConstBaseLearner, PolyBaseLearner, fit!, predict
 
+include("boost.jl")
 export BoostingModel, boost!, step!
 
-export triangular_to_vec, vec_to_triangular, μ_chol_splitter
-
-export mvn_loss, mvn_d_from_ϕ
-
-export gaussian_simulator
+include("losses.jl")
+export loss
 
 end

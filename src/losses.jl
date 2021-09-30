@@ -10,7 +10,6 @@ more detail.
 """
 
 function loss(
-    t::Type{MeanCholeskyMvn},
     ϕ::AbstractMatrix{<: Real},
     x::AbstractMatrix{Float64})
     @argcheck size(ϕ, 1) == size(x, 1)
@@ -22,17 +21,20 @@ function loss(
     return batch_loss/size(x, 1)
 end
 
-function _loss(
-    t::Type{MeanCholeskyMvn},
-    ϕᵢ::AbstractVector{<: Real},
+"""
+Negative log-pdf of normal distribution
+"""
+function loss(
+    ϕᵢ::MeanCholeskyMvn,
     xᵢ::AbstractVector{Float64})
-    ϕ = unvectorize(t, ϕᵢ)
-    @unpack μ, U = ϕ
-    Λ = Symmetric(U'U)
-    h = Λ*μ
-    d = MvNormalCanon(h, Λ)
-    return -logpdf(d, xᵢ)
+    @unpack μ, U, dim = ϕᵢ
+    Λ = Symmetric(U'U)    
+    log_det_Σ = -2*sum(log.(diag(U)))
+    (1/2)*(dim*log(2π) + log_det_Σ + (xᵢ-μ)'Λ*(xᵢ-μ))
 end
+
+
+
 
 
 

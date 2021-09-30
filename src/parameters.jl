@@ -1,64 +1,47 @@
 
 abstract type Abstractϕ end
 
-
-
-using LinearAlgebra
-struct MeanCholeskyMvn{D} <: Abstractϕ
+"""
+Parameterization of multivariate normal distribution with mean vector μ and the
+upper triangular component of the cholesky decomposition of the covariance
+matrix.
+"""
+struct MeanCholeskyMvn <: Abstractϕ
+    "Mean vector"
     μ::Vector{Float64}
+    "Upper triangular component of cholesky decomposition of covariance matrix."
     U::UpperTriangular{Float64, Matrix{Float64}}
+    "Dimension of the multivariate normal distribution."
     dim::Int64
+    MeanCholeskyMvn(μ, U) = new(μ, U, length(μ))
 end
 
 
 
-μ = [1., 2]
-U = UpperTriangular(rand(2,2))
 
 
 
-Flux.@functor MeanCholeskyMvn
-
-MeanCholeskyMvn(μ, U) = MeanCholeskyMvn{length(μ)}(μ, U, length(μ))
-MeanCholeskyMvn(μ, U, dim) = MeanCholeskyMvn{dim}(μ, U, dim) # TODO check dims makes sense
-# TODO can we construct fine with MeanCholeskyMvn{2}(μ, U)???
 
 
-function unvectorize(::Type{MeanCholeskyMvn{D}}, ϕ_vec::AbstractVector{Float64}) where D
-    μ = ϕ_vec[1:D]
-    U = unvectorize(UpperTriangular, ϕ_vec[d+1:end])
-    return MeanCholeskyMvn(μ, U)
-end
-
-using LinearAlgebra
-μ = rand(2)
-U = UpperTriangular(rand(4,4))
-MeanCholeskyMvn(μ, U)
-
-SpaceGroup(g::Vector{SMatrix{N,N,Int,N2}}) where {N,N2} = SpaceGroup{N,N2}(g)
-
-
-# function get_parameters(::MeanCholeskyMvn, ϕᵢ::AbstractVector{<: Real})
-#     a = 9 + 8*length(ϕᵢ)
-#     @argcheck a == isqrt(a)^2
-#     idx = (-3 + isqrt(a)) ÷ 2
-#     μ = ϕᵢ[1:idx]
-#     U = vec_to_triangular(ϕᵢ[idx+1:end])
-#     return μ, U
+# TODO use views? Difficult as triangular matrix is different to reshaping the corresponding ϕ elements and any cat opperations seem to copy.
+# struct MeanCholeskyMvn2{T1, T2} <: Abstractϕ
+#     "Parameters flattened to a vector"
+#     ϕ::Vector{Float64}
+#     "Mean vector"
+#     μ::T1
+#     "Upper triangular component of cholesky decomposition of covariance matrix."
+#     U::T2
+#     "Dimension of the multivariate normal distribution."
+#     dim::Int64
+#     function MeanCholeskyMvn2(
+#         μ::AbstractVector{Float64},
+#         U::UpperTriangular{Float64, Matrix{Float64}})
+#         @argcheck length(μ) == size(U, 1)
+#         dim = length(μ)
+#         ϕ = vcat(μ, vectorize(U))
+#         μ = @view ϕ[1:dim]
+#         U = vec(U)
+#         U = UpperTriangular(reshape(U, dim, dim))    
+#         new{typeof(μ), typeof(U)}(μ, U, dim)
+#     end
 # end
-
-# """
-# Take a flattened vector and triangular matrix and reconstruct it returning a
-# tuple. $(SIGNATURES)
-# """
-# function μ_chol_splitter(ϕᵢ::AbstractVector{<: Real})
-#     a = 9 + 8*length(ϕᵢ)
-#     @argcheck a == isqrt(a)^2
-#     idx = (-3 + isqrt(a)) ÷ 2
-#     μ = ϕᵢ[1:idx]
-#     U = vec_to_triangular(ϕᵢ[idx+1:end])
-#     return μ, U
-# end
-
-# https://docs.julialang.org/en/v1/manual/types/
-# https://discourse.julialang.org/t/should-i-dispatch-on-singleton-types-or-their-instances/28204/4
