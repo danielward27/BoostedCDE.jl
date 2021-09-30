@@ -1,20 +1,7 @@
 
 abstract type Abstractϕ end
 
-"""
-Vectorize(ϕ::Abstractϕ) flattens a struct similarly to Flux.destructure, but
-with specialised methods for special matrices. Specifically, it ignores off
-diagonal elements for Diagonal matrices, and lower triangular elements in upper
-triangular matrices.
-"""
-function vectorize(ϕ::Abstractϕ)
-    ϕ_parts = Array{Float64}[]
-    Flux.fmap(ϕ) do ϕ_part
-        ϕ_part isa AbstractArray{<: Real} && push!(ϕ_parts, ϕ_part)
-        return x
-    end
-    return reduce(vcat, vectorize.(ϕ_parts))
-end
+
 
 using LinearAlgebra
 struct MeanCholeskyMvn{D} <: Abstractϕ
