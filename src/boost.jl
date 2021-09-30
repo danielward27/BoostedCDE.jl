@@ -3,23 +3,23 @@ The boosting algorithm, and related functions.
 """
 
 """
-Constructs a BoostingModel that can be trained using [`boost`](@ref)
+Constructs a BoostingModel that can be trained using [`boost!`](@ref)
 """
-struct BoostingModel{T <: Vector{<: BaseLearner}}   # TODO do we really need a class for this? We could 
+struct BoostingModel{T1 <: Abstractϕ, T2 <: Vector{<: BaseLearner}}
     "Initial ouput parameter predictions. Same for all datapoints."
-    init_ϕ::Vector{Float64}
+    init_ϕ::T1
     "Base_learners matching the length of ϕ."
-    base_learners::T
+    base_learners::T2
     "Step length."
     sl::Float64
     "Base learners selected during training."
-    base_learners_selected::T
+    base_learners_selected::T2
     "The indices corresponding to the selected base learners (j=ϕ tuple idx, k=element of ϕ[j], l=θ idx))."
     jk::Vector{Tuple{Int64, Int64}}
 
     function BoostingModel(init_ϕ, base_learners; sl=0.1)
-        @argcheck length(init_ϕ) == length(base_learners)
-        new{typeof(base_learners)}(
+        @argcheck length(vectorize(init_ϕ)) == length(base_learners)
+        new{typeof(init_ϕ), typeof(base_learners)}(
             init_ϕ, base_learners, sl, BaseLearner[],
             Tuple{Int64, Int64, Int64}[])
     end
@@ -31,7 +31,8 @@ Predict using the boosting model to get the conditional distributional parameter
 function predict(model::BoostingModel, θ::AbstractMatrix{Float64})
     @unpack base_learners_selected, sl, init_ϕ, jk = model
     N = size(θ, 1)
-    ϕ = zeros(N, length(init_ϕ)) .+ init_ϕ'
+    init_ϕ_v = vectorize(init_ϕ)
+    ϕ = zeros(N, length(init_ϕ_v)) .+ init_ϕ_v'
 
     for (bl, (j, k)) in zip(base_learners_selected, jk)
         ûⱼₖ = predict(bl, θ[:, k])
@@ -54,7 +55,15 @@ function step!(
     ϕₘ::Matrix{Float64},
     loss::Function)
     @unpack base_learners, base_learners_selected, sl, jk = model
-    u = -ReverseDiff.gradient(ϕₘ -> mvn_loss(ϕₘ, x), ϕₘ)::Matrix{Float64}  # N×j
+
+    u = Flux.gradient(params(ϕₘ)) do 
+        batch_loss = 0.
+        for (ϕᵢv, xᵢ)  in zip(eachrow(ϕₘ), eachrow(x))  # TODO time with column major opimized version?
+            ϕᵢ = unvectorize_like(model.init_ϕ, ϕᵢvᵢ)
+            batch_loss += loss(t, ϕᵢ, xᵢ)
+        end
+    end  # N×j
+    # u = -ReverseDiff.gradient(ϕₘ -> mvn_loss(ϕₘ, x), ϕₘ)::Matrix{Float64}  # N×j
 
     local best_bl, best_jk, best_ϕ
     best_loss = Inf
@@ -89,7 +98,6 @@ function boost!(
     model::BoostingModel,
     θ::Matrix{Float64},
     x::Matrix{Float64};
-    loss::Function,
     steps::Int)
     ϕₘ = predict(model, θ)  # ϕ₀ if untrained
     losses = zeros(steps)

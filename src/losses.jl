@@ -10,6 +10,7 @@ more detail.
 """
 
 function loss(
+    example::Abstractϕ,
     ϕ::AbstractMatrix{<: Real},
     x::AbstractMatrix{Float64})
     @argcheck size(ϕ, 1) == size(x, 1)

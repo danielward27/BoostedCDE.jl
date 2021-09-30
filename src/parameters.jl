@@ -23,25 +23,27 @@ end
 
 
 
-# TODO use views? Difficult as triangular matrix is different to reshaping the corresponding ϕ elements and any cat opperations seem to copy.
-# struct MeanCholeskyMvn2{T1, T2} <: Abstractϕ
-#     "Parameters flattened to a vector"
-#     ϕ::Vector{Float64}
-#     "Mean vector"
-#     μ::T1
-#     "Upper triangular component of cholesky decomposition of covariance matrix."
-#     U::T2
-#     "Dimension of the multivariate normal distribution."
-#     dim::Int64
-#     function MeanCholeskyMvn2(
-#         μ::AbstractVector{Float64},
-#         U::UpperTriangular{Float64, Matrix{Float64}})
-#         @argcheck length(μ) == size(U, 1)
-#         dim = length(μ)
-#         ϕ = vcat(μ, vectorize(U))
-#         μ = @view ϕ[1:dim]
-#         U = vec(U)
-#         U = UpperTriangular(reshape(U, dim, dim))    
-#         new{typeof(μ), typeof(U)}(μ, U, dim)
-#     end
-# end
+struct MeanCholeskyMvn2{T} <: Abstractϕ
+    "Parameters flattened to a vector"
+    ϕ::Vector{Float64}
+    "Mean vector view of ϕ"
+    μ::T
+    "Upper triangular vector view of ϕ."
+    U::T
+    "Dimension of the multivariate normal distribution."
+    dim::Int64
+    function MeanCholeskyMvn2(
+        μ::AbstractVector,
+        U::UpperTriangular)
+        U = vectorize(U)
+        dim = length(μ)
+        ϕ = vcat(μ, U)
+        μ = @view ϕ[1:dim]
+        U = @view ϕ[dim+1:end]
+        new{typeof(μ)}(ϕ, μ, U, dim)
+    end
+end
+
+get_μ(ϕ::MeanCholeskyMvn2) = ϕ.μ
+get_U(ϕ::MeanCholeskyMvn2) = unvectorize(UpperTriangular, ϕ.U)
+
