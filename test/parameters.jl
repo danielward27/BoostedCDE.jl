@@ -2,9 +2,14 @@ using Test
 using BoostedCDE
 using LinearAlgebra
 
-μ = [1,2.]
-U = UpperTriangular([3 4; 0 5])
-ϕ = BoostedCDE.MeanCholeskyMvn2(μ, U)
+@testset "MeanCholeskyMvn" begin
+    μ = [1.,2]
+    U = UpperTriangular([3. 4; 0 5])
+    ϕ = MeanCholeskyMvn(μ, U)
 
-BoostedCDE.get_μ(ϕ)
-BoostedCDE.get_U(ϕ)
+    # Check view behavior works as needed
+    ϕ.v[1] += 10
+    ϕ.v[5] += 10
+    @test ϕ.μ[1] == 11
+    @test ϕ.U[3] == 15
+end

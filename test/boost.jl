@@ -1,8 +1,9 @@
 using BoostedCDE
 using Test
 using Distributions
+using LinearAlgebra
 
-init_ϕ = [1., 2, 3, 4, 5]
+init_ϕ = MeanCholeskyMvn(rand(2), UpperTriangular(rand(2,2)))
 
 @testset "BoostingModel argchecks" begin
     bl_too_long = (fill(PolyBaseLearner(2), 6))
@@ -10,12 +11,14 @@ init_ϕ = [1., 2, 3, 4, 5]
 end
 
 
-bl = fill(PolyBaseLearner(2), length(init_ϕ))  # TODO in practice we need to make sure models are not copys of eachother!
+bl = fill(PolyBaseLearner(2), length(init_ϕ.v))  # TODO in practice we may need to make sure models are not copys of eachother!
 model = BoostingModel(init_ϕ, bl)
 x = rand(10, 2)
 θ = rand(10, 5)
+
+# Empty model prediction should return init_ϕ
 ϕₘ = predict(model, θ)
-@test all([all(init_ϕ[j] .== ϕₘ[:, j]) for j in 1:length(init_ϕ)])  # Empty model
+@test all([all(init_ϕ.v[j] .== ϕₘ[:, j]) for j in 1:length(init_ϕ.v)])  
 
 ϕₘ, losses = boost!(model, θ, x; steps=10)
 

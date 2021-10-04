@@ -55,8 +55,15 @@ function step!(
     ϕₘ::Matrix{Float64},
     loss::Function)
     @unpack base_learners, base_learners_selected, sl, jk = model
+    N = size(θ, 1)
+    J = length(base_learners)
+    u = Matrix{Float64}(undef, N, J)
 
-    u = Flux.gradient(params(ϕₘ)) do 
+    ϕₘ 
+    for i in 1:N
+
+    end
+    u = Flux.gradient(Flux.params(ϕₘ)) do 
         batch_loss = 0.
         for (ϕᵢv, xᵢ)  in zip(eachrow(ϕₘ), eachrow(x))  # TODO time with column major opimized version?
             ϕᵢ = unvectorize_like(model.init_ϕ, ϕᵢvᵢ)

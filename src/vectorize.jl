@@ -23,12 +23,12 @@ vectorize(a::Diagonal) = diag(a)
 
 """
 Given the array type and the vector, reform the array. This does the oposite
-tranformation of [`vectorize`](@ref)
+transformation of [`vectorize`](@ref)
 """
 function unvectorize(::Type{UpperTriangular}, v::AbstractVector{T}) where T
     l  = length(v)
     n = (-1 + isqrt(1 + 8l)) ÷ 2
-    M = Matrix{T}(undef, n, n)
+    M = Zygote.Buffer(Matrix{T}(undef, n, n))
     k = 0
     for i in 1:n
         for j in 1:i
@@ -36,7 +36,7 @@ function unvectorize(::Type{UpperTriangular}, v::AbstractVector{T}) where T
         end
         k += i
     end
-    return UpperTriangular(M)
+    return UpperTriangular(copy(M))
 end
 
 unvectorize(::Type{Diagonal}, v::AbstractVector) = Diagonal(v)
@@ -44,7 +44,7 @@ unvectorize(::Type{Diagonal}, v::AbstractVector) = Diagonal(v)
 ## ϕ structs
 
 function vectorize(ϕ::MeanCholeskyMvn)
-    @unpack μ, U, dim = ϕ
+    @unpack μ, U, d = ϕ
     vcat(μ, vectorize(U))
 end
 
