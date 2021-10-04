@@ -6,7 +6,7 @@ using Distributions
 @testset "MeanCholeskyMvn" begin
     ϕ = MeanCholeskyMvn([1.,2], UpperTriangular([3. 4; 0 5]))
     x = rand(2)
-    U = unvectorize(UpperTriangular, ϕ.U)
+    U = BoostedCDE.triangular_from_vecvec(ϕ.U)
     Λ = Symmetric(U'U)
     h = Λ*ϕ.μ
     d = MvNormalCanon(h, Λ)
@@ -14,25 +14,60 @@ using Distributions
 end
 
 
-ϕ1 = MeanCholeskyMvn([1., 2], UpperTriangular([3. 4; 0 5]))
-ϕ2 = MeanCholeskyMvn([2., 3], UpperTriangular([3. 4; 0 5]))
+# test gradients - ReverseDiff
 
-ϕₘ = [ϕ1, ϕ2]
-x = [1 1 ; 1 1]
+using ReverseDiff
+ϕ = MeanCholeskyMvn([1., 2], UpperTriangular([3. 4; 0 5]))
+x = [-1.,1]
+loss2(v) = begin
+    ϕ.v .= v
+    loss(ϕ, x)
+end
+
+
+loss3(v) = begin
+    ϕ = MeanCholeskyMvn(v)
+    loss(ϕ, x)
+end
+
+ReverseDiff.gradient(loss3, rand(5))
+
+
+##### Using Flux
 using Flux
-params = Flux.params([ϕ.v for ϕ in ϕₘ])
-u = Flux.gradient(params) do
-    sum(loss.(ϕₘ, eachrow(x)))
+
+
+loss(ϕ, x)
+v = rand(5)
+u = Flux.gradient(Flux.params(v)) do
+    ϕ = MeanCholeskyMvn(v)
+    loss(ϕ, x)
 end
 
-u = Flux.gradient(Flux.params(ϕ1)) do
-    sum(loss(ϕ1, x[1, :]))
-end
-u[ϕ1]
+
+u[ϕ.v]
+
+
+u[ϕ.μ]
+
+gs = Flux.gradient(() -> loss(ϕ, x), Flux.params(ϕ))
+
+gs[ϕ]
+
+keys(u)
 
 sum(loss.(ϕₘ, eachrow(x)))
 
 u[ϕₘ[2].v]
+
+struct Foo{T}
+    a::T
+end
+
+a = rand(3,3)
+b = Foo(@view a[1:3])
+a .+= 10
+b.a
 
 
 

@@ -10,27 +10,15 @@
 # more detail.
 # """
 
-# function loss(
-#     example::Abstractϕ,
-#     ϕ::AbstractMatrix{<: Real},
-#     x::AbstractMatrix{Float64})
-#     @argcheck size(ϕ, 1) == size(x, 1)
-#     batch_loss = 0.
-
-#     for (ϕᵢ, xᵢ)  in zip(eachrow(ϕ), eachrow(x))  # TODO time with column major opimized version?
-#         batch_loss += _loss(t, ϕᵢ, xᵢ)
-#     end
-#     return batch_loss/size(x, 1)
-# end
 
 """
 Negative log-pdf of a multivariate normal distribution.
 """
 function loss(
     ϕᵢ::MeanCholeskyMvn,
-    xᵢ::AbstractVector)
+    xᵢ::AbstractVector{Float64})
     @unpack μ, U, d = ϕᵢ
-    U = unvectorize(UpperTriangular, U)
+    U = triangular_from_vecvec(U)
     Λ = Symmetric(U'U)    
     log_det_Σ = -2*sum(log.(diag(U)))
     (1/2)*(d*log(2π) + log_det_Σ + (xᵢ-μ)'Λ*(xᵢ-μ))

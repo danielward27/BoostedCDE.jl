@@ -16,11 +16,10 @@ using Random
 using Random: default_rng
 using UnPack
 
+include("utils.jl")
+
 include("parameters.jl")
 export MeanCholeskyMvn
-
-include("utils.jl")
-export triangular_to_vec, vec_to_triangular
 
 include("vectorize.jl")
 export vectorize, unvectorize, unvectorize_like
