@@ -7,7 +7,6 @@ using DocStringExtensions
 using Distributions
 using LinearAlgebra
 using UnPack
-using ArgCheck
 using StatsBase
 using StatsBase: mean
 using Random
@@ -29,7 +28,7 @@ include("base_learners.jl")
 export BaseLearner, ConstBaseLearner, PolyBaseLearner, fit!, predict
 
 include("boost.jl")
-export BoostingModel, boost!, step!
+export BoostingModel, boost!, step!, reset!
 
 include("losses.jl")
 export loss

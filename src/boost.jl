@@ -6,40 +6,48 @@ The boosting algorithm, and related functions.
 Constructs a BoostingModel that can be trained using [`boost!`](@ref)
 """
 struct BoostingModel{T <: Vector{<: BaseLearner}}
-    "Initial ouput parameter predictions. Same for all datapoints."
-    init_ϕ::Matrix{Float64}
+    "Initial ouput parameter predictions, same for all predictions."
+    init_ϕ::Vector{Float64}
     "Base_learners matching the length of ϕ."
     base_learners::T
     "Step length."
-    sl::Float64
+    η::Float64
     "Base learners selected during training."
     base_learners_selected::T
     "The indices corresponding to the selected base learners (j=ϕ tuple idx, k=element of ϕ[j], l=θ idx))."
     jk::Vector{Tuple{Int64, Int64}}
 
-    function BoostingModel(init_ϕ, base_learners; sl=0.1)
-        length(vectorize(init_ϕ)) == length(base_learners) || throw(ArgumentError("Mismatch between ϕ dimension and number of base learners."))
+    BoostingModel(init_ϕ, base_learners; η=0.1) = begin
+        length(init_ϕ) == length(base_learners) || throw(ArgumentError("Mismatch between ϕ length and number of base learners."))
         new{typeof(base_learners)}(
-            init_ϕ, base_learners, sl, BaseLearner[],
+            init_ϕ, base_learners, η, BaseLearner[],
             Tuple{Int64, Int64}[])
     end
+end
+
+"""
+"Reset" the boosting model, removing all the selected base learners and corresponding indices.
+"""
+function reset!(model::BoostingModel)
+    @unpack base_learners_selected, jk = model
+    [deleteat!(x, 1:length(x)) for x in [base_learners_selected, jk]]
 end
 
 """
 Predict using the boosting model to get the conditional distributional parameters.
 """
 function predict(model::BoostingModel, θ::AbstractMatrix{Float64})
-    @unpack base_learners_selected, sl, init_ϕ, jk = model
-    N = size(θ, 1)
-    init_ϕ_v = vectorize(init_ϕ)
-    ϕ = zeros(N, length(init_ϕ_v)) .+ init_ϕ_v'
-
+    @unpack base_learners_selected, η, init_ϕ, jk = model
+    N, J = size(θ, 1), length(init_ϕ)
+    ϕ = zeros(N, J) .+ init_ϕ'
     for (bl, (j, k)) in zip(base_learners_selected, jk)
         ûⱼₖ = predict(bl, θ[:, k])
-        ϕ[:, j] .+= sl*ûⱼₖ
+        ϕ[:, j] .+= η*ûⱼₖ
     end
     return ϕ
 end
+
+
 
 
 """
@@ -54,32 +62,32 @@ function step!(
     x::AbstractMatrix{Float64},
     ϕₘ::AbstractMatrix{Float64};
     loss::Function)
-    @unpack base_learners, base_learners_selected, sl, jk = model
+    @unpack base_learners, base_learners_selected, η, jk = model
     J = length(base_learners)
-    u = Flux.gradient(ϕ -> loss(MeanCholeskyMvn, ϕ, x), ϕ)[1]
+    K = size(θ, 2)
+    u = -Zygote.gradient(ϕ -> loss(ϕ, x), ϕₘ)[1]
 
-    local best_bl, best_jk, best_ϕ
-    best_loss = Inf
-    θ_cols = eachcol(θ)
+    local best_bl, best_jk, best_update
+    
+    best_inner_loss = Inf
     for j in 1:J
         blⱼₖ = base_learners[j]
-        for (k, θₖ) in enumerate(θ_cols)
-            fit!(blⱼₖ, θₖ, u[:, j])
+        uⱼ = @view u[:, j]
+        for k in 1:K
+            θₖ = @view θ[:, k]  # TODO Change from ID Dict? This creates a new view each step messing up IDDict. Could make step take in cols views as arguments but that seems a bit dumb?
+            fit!(blⱼₖ, θₖ, uⱼ)
             ûⱼ = predict(blⱼₖ, θₖ)
-            ϕ_proposed = copy(ϕₘ)
-            ϕ_proposed[:, j] = ϕ_proposed[:, j] + sl*ûⱼ
-            lossⱼₖ = loss(ϕ_proposed, x)
-            if lossⱼₖ < best_loss
+            inner_lossⱼₖ = var(ûⱼ - uⱼ) - var(uⱼ)
+            if inner_lossⱼₖ < best_inner_loss
                 best_bl = deepcopy(blⱼₖ)
                 best_jk = (j, k)
-                best_ϕ = copy(ϕ_proposed)
-                best_loss = lossⱼₖ
+                best_update = η*ûⱼ
             end
         end
     end
     push!(base_learners_selected, best_bl)
     push!(jk, best_jk)
-    return (ϕₘ = best_ϕ, loss = best_loss)
+    return model
 end
 
 
@@ -89,13 +97,14 @@ $(SIGNATURES)
 """
 function boost!(
     model::BoostingModel,
-    θ::Matrix{Float64},
-    x::Matrix{Float64};
+    θ::AbstractMatrix{Float64},
+    x::AbstractMatrix{Float64};
+    loss::Function,
     steps::Int)
     ϕₘ = predict(model, θ)  # ϕ₀ if untrained
     losses = zeros(steps)
     for m in 1:steps
-        ϕₘ, lossₘ = step!(model, θ, x, ϕₘ, loss)
+        ϕₘ, lossₘ = step!(model, θ, x, ϕₘ, loss= loss)
         losses[m] = lossₘ
     end
     (ϕₘ = ϕₘ, loss=losses)

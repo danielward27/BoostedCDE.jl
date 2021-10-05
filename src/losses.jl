@@ -38,8 +38,6 @@ end
 
 
 
-
-
 # function mean_cholesky_mvn_loss(ϕv::AbstractVector, x::AbstractVector)
 #     ϕ = MeanCholeskyMvn(ϕv)
 #     @unpack μ, U, d = ϕᵢ
