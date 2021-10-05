@@ -2,8 +2,6 @@ module BoostedCDE
 
 import Base.@kwdef
 import Base: length
-using Flux
-using ReverseDiff
 using Zygote
 using DocStringExtensions
 using Distributions

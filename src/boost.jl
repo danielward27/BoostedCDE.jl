@@ -5,23 +5,23 @@ The boosting algorithm, and related functions.
 """
 Constructs a BoostingModel that can be trained using [`boost!`](@ref)
 """
-struct BoostingModel{T1 <: Abstractϕ, T2 <: Vector{<: BaseLearner}}
+struct BoostingModel{T <: Vector{<: BaseLearner}}
     "Initial ouput parameter predictions. Same for all datapoints."
-    init_ϕ::T1
+    init_ϕ::Matrix{Float64}
     "Base_learners matching the length of ϕ."
-    base_learners::T2
+    base_learners::T
     "Step length."
     sl::Float64
     "Base learners selected during training."
-    base_learners_selected::T2
+    base_learners_selected::T
     "The indices corresponding to the selected base learners (j=ϕ tuple idx, k=element of ϕ[j], l=θ idx))."
     jk::Vector{Tuple{Int64, Int64}}
 
     function BoostingModel(init_ϕ, base_learners; sl=0.1)
-        @argcheck length(vectorize(init_ϕ)) == length(base_learners)
-        new{typeof(init_ϕ), typeof(base_learners)}(
+        length(vectorize(init_ϕ)) == length(base_learners) || throw(ArgumentError("Mismatch between ϕ dimension and number of base learners."))
+        new{typeof(base_learners)}(
             init_ϕ, base_learners, sl, BaseLearner[],
-            Tuple{Int64, Int64, Int64}[])
+            Tuple{Int64, Int64}[])
     end
 end
 
@@ -50,32 +50,18 @@ $(SIGNATURES)
 """
 function step!(
     model::BoostingModel,
-    θ::Matrix{Float64},
-    x::Matrix{Float64},
-    ϕₘ::Matrix{Float64},
+    θ::AbstractMatrix{Float64},
+    x::AbstractMatrix{Float64},
+    ϕₘ::AbstractMatrix{Float64};
     loss::Function)
     @unpack base_learners, base_learners_selected, sl, jk = model
-    N = size(θ, 1)
     J = length(base_learners)
-    u = Matrix{Float64}(undef, N, J)
-
-    ϕₘ 
-    for i in 1:N
-
-    end
-    u = Flux.gradient(Flux.params(ϕₘ)) do 
-        batch_loss = 0.
-        for (ϕᵢv, xᵢ)  in zip(eachrow(ϕₘ), eachrow(x))  # TODO time with column major opimized version?
-            ϕᵢ = unvectorize_like(model.init_ϕ, ϕᵢvᵢ)
-            batch_loss += loss(t, ϕᵢ, xᵢ)
-        end
-    end  # N×j
-    # u = -ReverseDiff.gradient(ϕₘ -> mvn_loss(ϕₘ, x), ϕₘ)::Matrix{Float64}  # N×j
+    u = Flux.gradient(ϕ -> loss(MeanCholeskyMvn, ϕ, x), ϕ)[1]
 
     local best_bl, best_jk, best_ϕ
     best_loss = Inf
     θ_cols = eachcol(θ)
-    for j in 1:length(base_learners)
+    for j in 1:J
         blⱼₖ = base_learners[j]
         for (k, θₖ) in enumerate(θ_cols)
             fit!(blⱼₖ, θₖ, u[:, j])

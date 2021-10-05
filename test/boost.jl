@@ -5,6 +5,23 @@ using LinearAlgebra
 
 init_ϕ = MeanCholeskyMvn(rand(2), UpperTriangular(rand(2,2)))
 
+N = 10
+J = 5
+
+init_ϕ = rand(N, J)
+θ = rand(N, 5)
+x = rand(N, 2)
+
+bls = fill(PolyBaseLearner(2), J)
+
+BoostingModel(init_ϕ, bls)
+
+
+
+
+
+
+
 @testset "BoostingModel argchecks" begin
     bl_too_long = (fill(PolyBaseLearner(2), 6))
     @test_throws ArgumentError BoostingModel(init_ϕ, bl_too_long)

@@ -3,16 +3,14 @@ using BoostedCDE
 using LinearAlgebra
 
 @testset "MeanCholeskyMvn" begin
-    μ = [1.,2, 3]
     U = UpperTriangular([3. 4; 0 5])
 
     @test_throws ArgumentError MeanCholeskyMvn([1.,2,3,4,5,6])
-    @test_throws ArgumentError MeanCholeskyMvn(μ, U)
+    @test_throws ArgumentError MeanCholeskyMvn([1.,2, 3], U)
 
-    # Check view behaviour as expected
-    ϕ = MeanCholeskyMvn([1.,2,3,4,5])
-    ϕ.v[1] += 10
-    ϕ.v[5] += 10
-    @test ϕ.μ[1] == 11
-    @test ϕ.U[end][end] == 15
+    a = MeanCholeskyMvn([1.,2,3,4,5])
+    b = MeanCholeskyMvn([1., 2], U)
+    @test a.μ == b.μ
+    @test a.U == b.U
+    @test a.d == b.d
 end

@@ -1,4 +1,5 @@
 using Test
+using LinearAlgebra
 using BoostedCDE
 
 @test BoostedCDE.tri_col_ranges(3) == [1:1, 2:3, 4:6]

@@ -26,11 +26,10 @@ Given the array type and the vector, reform the array. This does the oposite
 transformation of [`vectorize`](@ref)
 """
 function unvectorize(::Type{UpperTriangular}, v::AbstractVector{T}) where T
-    l  = length(v)
-    n = (-1 + isqrt(1 + 8l)) ÷ 2
-    M = Zygote.Buffer(Matrix{T}(undef, n, n))
+    d = tri_n_el_to_d(length(v))
+    M = Zygote.Buffer(Matrix{T}(undef, d, d))
     k = 0
-    for i in 1:n
+    for i in 1:d
         for j in 1:i
             M[j, i] = v[k + j]
         end
@@ -48,9 +47,9 @@ function vectorize(ϕ::MeanCholeskyMvn)
     vcat(μ, vectorize(U))
 end
 
-function unvectorize_like(example::MeanCholeskyMvn, ϕ_vec::AbstractVector)
-    d = example.dim
-    μ = ϕ_vec[1:d]
-    U = unvectorize(UpperTriangular, ϕ_vec[d+1:end])
-    return MeanCholeskyMvn(μ, U)
-end
+# function unvectorize_like(example::MeanCholeskyMvn, ϕ_vec::AbstractVector)
+#     d = example.dim
+#     μ = ϕ_vec[1:d]
+#     U = unvectorize(UpperTriangular, ϕ_vec[d+1:end])
+#     return MeanCholeskyMvn(μ, U)
+# end

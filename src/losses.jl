@@ -9,20 +9,58 @@
 # ϕ::AbstractMatrix{Float64}, will not work. See ReverseDiff documentation for
 # more detail.
 # """
-
-
 """
-Negative log-pdf of a multivariate normal distribution.
+Loss function, if matrices used reduced using mean.
 """
 function loss(
-    ϕᵢ::MeanCholeskyMvn,
-    xᵢ::AbstractVector{Float64})
-    @unpack μ, U, d = ϕᵢ
-    U = triangular_from_vecvec(U)
+    T::Type{<:Abstractϕ},
+    ϕv::AbstractVector{Float64},
+    x::AbstractVector{Float64})
+    ϕ = T(ϕv)
+    loss(ϕ, x)
+end
+
+function loss(
+    T::Type{<:Abstractϕ},
+    ϕv::AbstractMatrix{Float64},
+    x::AbstractMatrix{Float64})
+    l = sum(loss.(T, eachrow(ϕv), eachrow(x)))/size(ϕv,1)
+    l
+end
+
+function loss(ϕ::MeanCholeskyMvn, x::AbstractVector{Float64})
+    @unpack μ, U, d = ϕ
     Λ = Symmetric(U'U)    
     log_det_Σ = -2*sum(log.(diag(U)))
-    (1/2)*(d*log(2π) + log_det_Σ + (xᵢ-μ)'Λ*(xᵢ-μ))
+    return (1/2)*(d*log(2π) + log_det_Σ + (x-μ)'Λ*(x-μ))
 end
+
+
+
+
+
+
+# function mean_cholesky_mvn_loss(ϕv::AbstractVector, x::AbstractVector)
+#     ϕ = MeanCholeskyMvn(ϕv)
+#     @unpack μ, U, d = ϕᵢ
+#     Λ = Symmetric(U'U)    
+#     log_det_Σ = -2*sum(log.(diag(U)))
+#     (1/2)*(d*log(2π) + log_det_Σ + (xᵢ-μ)'Λ*(xᵢ-μ))
+# end
+
+# mean_cholesky_mvn_loss([1.2,3,4,5], [1,2.])
+
+# """
+# Negative log-pdf of a multivariate normal distribution.
+# """
+# function loss(
+#     ϕᵢ::MeanCholeskyMvn,
+#     xᵢ::AbstractVector{Float64})
+#     @unpack μ, U, d = ϕᵢ
+#     Λ = Symmetric(U'U)    
+#     log_det_Σ = -2*sum(log.(diag(U)))
+#     (1/2)*(d*log(2π) + log_det_Σ + (xᵢ-μ)'Λ*(xᵢ-μ))
+# end
 
 
 

@@ -4,22 +4,17 @@ authors = ["Daniel Ward"]
 version = "0.1.0"
 
 [deps]
-ArgCheck = "dce04be8-c92d-5529-be00-80e4d2c0e197"
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
-Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
-ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 Functors = "d9f16b24-f501-4c13-a1f2-28368ffc5196"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
-ReverseDiff = "37e2e3b7-166d-5795-8a7a-e32c996b4267"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
-ArgCheck = "2"
 Distributions = "0.25"
 DocStringExtensions = "0.8"
 Functors = "0.2"
