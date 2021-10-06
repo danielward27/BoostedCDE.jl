@@ -19,7 +19,7 @@ struct PolyBaseLearner <: BaseLearner
     _cache::IdDict{Any, LinearAlgebra.QRCompactWY{Float64, Matrix{Float64}}}
 end
 
-function PolyBaseLearner(degree; use_cache=true)
+function PolyBaseLearner(degree; use_cache=false)
     PolyBaseLearner(degree, fill(NaN, degree+1), use_cache, IdDict())
 end
 

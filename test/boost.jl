@@ -36,26 +36,21 @@ using LinearAlgebra
     ϕₘ = predict(model, θ)
     loss2_reset = ρ(ϕₘ, x)
     @test loss2_reset ≈ loss2
+
+    # Test predict providing previous ϕ works as expected
+    prev_ϕ = predict(model, θ)
+    step!(model, θ, x, ϕₘ; loss=ρ)
+    @test predict(model, θ, prev_ϕ) == predict(model, θ)
+
+    # Test step 5 + step 5 == step 10
+    reset!(model)
+    boost!(model, θ, x, loss=ρ, steps=5)
+    boost!(model, θ, x, loss=ρ, steps=5)
+    ϕ1 = predict(model, θ)
+
+    reset!(model)
+    boost!(model, θ, x, loss=ρ, steps=10)
+    ϕ2 = predict(model, θ)
+    @test ϕ1 == ϕ2
 end
-
-# TODO Step 5 and 5 should equal steps 10
-
-
-
-
-
-
-
-
-
-    #  ϕₘ, losses = boost!(model, θ, x; loss=mvn_loss, steps=10)
-    #  @test all([losses[i+1] < losses[i] for i in 1:(length(losses) - 1)])
-    #  @test ϕₘ ≈ predict(model, θ)  # Accumulated during training vs predict from scratch
-    #  # step 5 and 5 should give same result as steps=10
-    #  model = BoostingModel(init_ϕ, bl)
-    #  _, _ = boost!(model, θ, x; loss=mvn_loss, steps=5)
-    #  ϕₘ2, losses2 = boost!(model, θ, x; loss=mvn_loss, steps=5)
-    #  @test losses[6:end] ≈ losses2
-    #  @test ϕₘ ≈ ϕₘ2
-
 

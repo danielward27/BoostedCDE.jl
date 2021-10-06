@@ -34,7 +34,9 @@ function reset!(model::BoostingModel)
 end
 
 """
-Predict using the boosting model to get the conditional distributional parameters.
+Predict using the boosting model to get the conditional distributional
+parameters. Should provide the last ϕ matrix (from previous iteration) if known
+to avoid recalculating.
 """
 function predict(model::BoostingModel, θ::AbstractMatrix{Float64})
     @unpack base_learners_selected, η, init_ϕ, jk = model
@@ -48,6 +50,18 @@ function predict(model::BoostingModel, θ::AbstractMatrix{Float64})
 end
 
 
+function predict(
+    model::BoostingModel,
+    θ::AbstractMatrix{Float64},
+    last_ϕ::AbstractMatrix{Float64})
+    @unpack base_learners_selected, η, jk = model
+    ϕ = last_ϕ
+    j, k = jk[end]
+    bl = base_learners_selected[end]
+    ûⱼₖ = predict(bl, θ[:, k])
+    ϕ[:, j] .+= η*ûⱼₖ
+    return ϕ
+end
 
 
 """
@@ -104,9 +118,10 @@ function boost!(
     ϕₘ = predict(model, θ)  # ϕ₀ if untrained
     losses = zeros(steps)
     for m in 1:steps
-        ϕₘ, lossₘ = step!(model, θ, x, ϕₘ, loss= loss)
-        losses[m] = lossₘ
+        step!(model, θ, x, ϕₘ, loss=loss)
+        ϕₘ = predict(model, θ, ϕₘ)
+        losses[m] = loss(ϕₘ, x)
     end
-    (ϕₘ = ϕₘ, loss=losses)
+    (model = model, ϕₘ = ϕₘ, loss=losses)
 end
 
