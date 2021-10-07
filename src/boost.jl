@@ -44,7 +44,7 @@ function predict(model::BoostingModel, θ::AbstractMatrix{Float64})
     ϕ = zeros(N, J) .+ init_ϕ'
     for (bl, (j, k)) in zip(base_learners_selected, jk)
         ûⱼₖ = predict(bl, θ[:, k])
-        ϕ[:, j] .+= η*ûⱼₖ
+        ϕ[:, j] .-= η*ûⱼₖ
     end
     return ϕ
 end
@@ -59,14 +59,17 @@ function predict(
     j, k = jk[end]
     bl = base_learners_selected[end]
     ûⱼₖ = predict(bl, θ[:, k])
-    ϕ[:, j] .+= η*ûⱼₖ
+    ϕ[:, j] .-= η*ûⱼₖ
     return ϕ
 end
 
 
 """
 Step the boosting model, by adding on a single new base model that minimizes the
-loss, returning the corresponding predictions ϕₘ, and loss in a tuple.
+inner loss. The gradient! function should take ϕ and x and return the gradient
+matrix matching the shape of ϕ. Note gradient! may (or may not) be mutating
+depending on the definition (e.g. if using tapes with ReverseDiff it would
+mutate the tape).
 
 $(SIGNATURES)
 """
@@ -76,14 +79,13 @@ function step!(
     x::AbstractMatrix{Float64},
     ϕₘ::AbstractMatrix{Float64};
     loss::Function)
-    @unpack base_learners, base_learners_selected, η, jk = model
+    @unpack base_learners, base_learners_selected, jk = model
     J = length(base_learners)
 
     K = size(θ, 2)
-    u = -ReverseDiff.gradient(ϕₘ -> loss(ϕₘ, x), ϕₘ)  # TODO support use of tapes?
+    u = ReverseDiff.gradient(ϕₘ -> loss(ϕₘ, x), ϕₘ)
 
     local best_bl, best_jk, best_update
-    
     best_inner_loss = Inf
     for j in 1:J
         blⱼₖ = base_learners[j]
@@ -96,7 +98,6 @@ function step!(
             if inner_lossⱼₖ < best_inner_loss
                 best_bl = deepcopy(blⱼₖ)
                 best_jk = (j, k)
-                best_update = η*ûⱼ
             end
         end
     end
@@ -107,7 +108,8 @@ end
 
 
 """
-Fit a boosting model by performing M steps. Returns the 
+Fit a boosting model by performing M steps. Returns the model,
+predictions and losses from each training iteration.
 $(SIGNATURES)
 """
 function boost!(
@@ -119,7 +121,7 @@ function boost!(
     ϕₘ = predict(model, θ)  # ϕ₀ if untrained
     losses = zeros(steps)
     for m in 1:steps
-        step!(model, θ, x, ϕₘ, loss=loss)
+        step!(model, θ, x, ϕₘ, loss = loss)
         ϕₘ = predict(model, θ, ϕₘ)
         losses[m] = loss(ϕₘ, x)
     end
