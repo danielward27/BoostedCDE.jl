@@ -39,21 +39,13 @@ gaussian_simulator(θ::AbstractMatrix{Float64}) = gaussian_simulator(default_rng
 
 
 
-
-
-
-# ## For testing:
-# """
-# Deterministic simulator (quadratic model) useful for testing.
-# """
-# function deterministic_test_simulator(
-#     rng::AbstractRNG,
-#     θ::AbstractVector{Float64}
-#     )
-#     rng  # Exists just to have a consistent signature
-#     @assert length(θ) == 2
-#     [θ[1], θ[1]*θ[2], θ[2]^2]
-# end
-
-# @loopify 3 deterministic_test_simulator
-
+"""
+Simulator that applies simple linear transformation of θ to get ϕ.
+Useful for testing.
+"""
+function linear_θ_to_ϕ_mvn_simulator(θ::AbstractMatrix{Float64})
+    throw(Error("Unimplemented"))
+    ϕ = [k+k*θₖ for (k, θₖ) in enumerate(eachcol(θ))]
+    ϕ = reduce(vcat, ϕ)
+    # return x
+ end

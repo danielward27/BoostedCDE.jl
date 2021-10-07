@@ -1,36 +1,52 @@
-# TODO Update this documentation
-# """ 
-# Loss functions. The loss function is differentiated with Zygote.jl. It
-# should take a two matrices each with n rows (number of
-# simulations/observations): ϕ contains the distributional parameters, and x
-# contains the observed/simulated points. The loss function should return a single
-# value i.e. the loss should be accumulated over the batch. Note ForwardDiff has
-# some requirements to be compatible, e.g. too strict types such as enforcing
-# ϕ::AbstractMatrix{Float64}, will not work. See ReverseDiff documentation for
-# more detail.
-# """
 """
-Loss function, if matrices used reduced using mean.
+Loss functions. The losses should be differentiable with ReverseDiff using a
+GradientTape, i.e. types for ϕ must be general (e.g. <: Real), and the loss
+should not have branches depending on the input.
+"""
+
+
+"""
+Calculate the loss given a parameterisation specified by Abstractϕ. If matrices
+are used, reduction is carried out using the mean.
 """
 function loss(
-    T::Type{<:Abstractϕ},
-    ϕv::AbstractMatrix{Float64},
-    x::AbstractMatrix{Float64})
-    l = sum(loss.(T, eachrow(ϕv), eachrow(x)))/size(ϕv,1)
-    l
+    parameterisation::Abstractϕ,
+    ϕ::AbstractMatrix{<: Real},
+    x::AbstractMatrix{<: Real}
+    )
+    l = map((ϕᵢ, xᵢ) -> loss(parameterisation, ϕᵢ, xᵢ), eachrow(ϕ), eachrow(x))
+    return mean(l)
 end
 
 function loss(
-    T::Type{<:Abstractϕ},
-    ϕv::AbstractVector{Float64},
-    x::AbstractVector{Float64})
-    ϕ = T(ϕv)
-    loss(ϕ, x)
-end
-
-function loss(ϕ::MeanCholeskyMvn, x::AbstractVector{Float64})
-    @unpack μ, U, d = ϕ
-    Λ = Symmetric(U'U)    
+    parameterisation::MeanCholeskyMvn,
+    ϕ::AbstractVector{<: Real},
+    x::AbstractVector{<: Real}
+    )
+    @unpack d = parameterisation
+    μ, U = get_params(parameterisation, ϕ)
+    Λ = U'U
     log_det_Σ = -2*sum(log.(diag(U)))
     return (1/2)*(d*log(2π) + log_det_Σ + (x-μ)'Λ*(x-μ))
 end
+
+
+
+
+
+
+
+# function five_dim_loss(ϕ::AbstractMatrix{<: Real}, x::AbstractMatrix{<: Real})
+#     μs = @view ϕ[:, 1:2]
+#     Us = @view ϕ[:, 3:end]
+#     d=2
+#     ll = 0
+#     for (xᵢ, μ, U) in zip(eachrow(x), eachrow(μs), eachrow(Us))
+#         U = unvectorize(UpperTriangular, U)
+#         Λ = U'U
+#         log_det_Σ = -2*sum(log.(diag(U)))
+#         ll += (1/2)*(d*log(2π) + log_det_Σ + (xᵢ-μ)'Λ*(xᵢ-μ))
+#     end
+#     return -ll
+# end
+

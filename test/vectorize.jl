@@ -11,12 +11,3 @@ using LinearAlgebra
     @test unvectorize(UpperTriangular, [1,2, 3]) == UpperTriangular([1 2; 0 3])
     @test_throws ArgumentError unvectorize(UpperTriangular, [1.,2,3,4])
 end
-
-@testset "vectorize ϕ parameter structs" begin
-    ϕv = [1.,2,3,4,5]
-    ϕ = MeanCholeskyMvn(ϕv)
-    ϕv_re = vectorize(ϕ)
-    @test ϕv_re == ϕv
-end
-
-

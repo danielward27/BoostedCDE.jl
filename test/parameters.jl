@@ -1,16 +1,16 @@
-using Test
 using BoostedCDE
+using Test
 using LinearAlgebra
+using Random
+
 
 @testset "MeanCholeskyMvn" begin
-    U = UpperTriangular([3. 4; 0 5])
-
-    @test_throws ArgumentError MeanCholeskyMvn([1.,2,3,4,5,6])
-    @test_throws ArgumentError MeanCholeskyMvn([1.,2, 3], U)
-
-    a = MeanCholeskyMvn([1.,2,3,4,5])
-    b = MeanCholeskyMvn([1., 2], U)
-    @test a.μ == b.μ
-    @test a.U == b.U
-    @test a.d == b.d
+    ϕ = [1.,2,3,4,5]
+    μ_expected = [1,2]
+    U_expected = UpperTriangular([3. 4; 0 5])
+    parameterisation = MeanCholeskyMvn(2)
+    μ, U = get_params(parameterisation, ϕ)
+    @test μ == μ_expected
+    @test U == U_expected
 end
+

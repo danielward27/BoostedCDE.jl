@@ -35,8 +35,8 @@ end
 
 """
 Predict using the boosting model to get the conditional distributional
-parameters. Should provide the last ϕ matrix (from previous iteration) if known
-to avoid recalculating.
+parameters. During training, the ϕ matrix from previous iteration can be
+provided to avoid recalculating.
 """
 function predict(model::BoostingModel, θ::AbstractMatrix{Float64})
     @unpack base_learners_selected, η, init_ϕ, jk = model
@@ -78,8 +78,9 @@ function step!(
     loss::Function)
     @unpack base_learners, base_learners_selected, η, jk = model
     J = length(base_learners)
+
     K = size(θ, 2)
-    u = -Zygote.gradient(ϕ -> loss(ϕ, x), ϕₘ)[1]
+    u = -ReverseDiff.gradient(ϕₘ -> loss(ϕₘ, x), ϕₘ)  # TODO support use of tapes?
 
     local best_bl, best_jk, best_update
     

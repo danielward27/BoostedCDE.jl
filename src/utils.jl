@@ -1,5 +1,3 @@
-
-
 """
 Given the number of triangular elements in a matrix, get the dimension. 
 """

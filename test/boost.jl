@@ -5,7 +5,7 @@ using LinearAlgebra
 
 # Test using basic vector api
 @testset "Boosting vector api" begin
-    ρ(ϕ, x) = loss(MeanCholeskyMvn, ϕ, x)
+    ρ(ϕ, x) = loss(MeanCholeskyMvn(2), ϕ, x)
     N = 10
     J = 5
     init_ϕ = rand(J)

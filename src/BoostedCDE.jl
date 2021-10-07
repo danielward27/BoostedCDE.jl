@@ -1,22 +1,20 @@
 module BoostedCDE
 
 import Base.@kwdef
-import Base: length
-using Zygote
-using DocStringExtensions
 using Distributions
+using DocStringExtensions
+using ReverseDiff
 using LinearAlgebra
-using UnPack
+using Random
+using Random: default_rng, AbstractRNG
 using StatsBase
 using StatsBase: mean
-using Random
-using Random: default_rng
 using UnPack
 
 include("utils.jl")
 
 include("parameters.jl")
-export MeanCholeskyMvn
+export MeanCholeskyMvn, get_params
 
 include("vectorize.jl")
 export vectorize, unvectorize, unvectorize_like
