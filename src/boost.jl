@@ -35,8 +35,8 @@ end
 
 """
 Predict using the boosting model to get the conditional distributional
-parameters. During training, the ϕ matrix from previous iteration can be
-provided to avoid recalculating.
+parameters.
+$(SIGNATURES)
 """
 function predict(model::BoostingModel, θ::AbstractMatrix{Float64})
     @unpack base_learners_selected, η, init_ϕ, jk = model
@@ -49,7 +49,12 @@ function predict(model::BoostingModel, θ::AbstractMatrix{Float64})
     return ϕ
 end
 
-
+"""
+Predict using the boosting model to get the conditional distributional
+parameters, using the ϕ matrix from previous training iteration to avoid
+recalculating.
+$(SIGNATURES)
+"""
 function predict(
     model::BoostingModel,
     θ::AbstractMatrix{Float64},
@@ -66,11 +71,7 @@ end
 
 """
 Step the boosting model, by adding on a single new base model that minimizes the
-inner loss. The gradient! function should take ϕ and x and return the gradient
-matrix matching the shape of ϕ. Note gradient! may (or may not) be mutating
-depending on the definition (e.g. if using tapes with ReverseDiff it would
-mutate the tape).
-
+inner loss. The loss function should take ϕ and x and return a scaler.
 $(SIGNATURES)
 """
 function step!(
@@ -98,6 +99,7 @@ function step!(
             if inner_lossⱼₖ < best_inner_loss
                 best_bl = deepcopy(blⱼₖ)
                 best_jk = (j, k)
+                best_inner_loss = inner_lossⱼₖ
             end
         end
     end
@@ -126,5 +128,31 @@ function boost!(
         losses[m] = loss(ϕₘ, x)
     end
     (model = model, ϕₘ = ϕₘ, loss=losses)
+end
+
+
+"""
+Boosting with tracking of validation error.
+"""
+function boost!(
+    model::BoostingModel,
+    θ::AbstractMatrix{Float64},
+    x::AbstractMatrix{Float64},
+    θ_val::AbstractMatrix{Float64},
+    x_val::AbstractMatrix{Float64};
+    loss::Function,
+    steps::Int)
+    ϕₘ = predict(model, θ)  # ϕ₀ if untrained
+    ϕₘ_val = predict(model, θ_val)  # ϕ₀ if untrained
+    losses = zeros(steps)
+    val_losses = zeros(steps)
+    for m in 1:steps
+        step!(model, θ, x, ϕₘ, loss = loss)
+        ϕₘ = predict(model, θ, ϕₘ)
+        ϕₘ_val = predict(model, θ_val, ϕₘ_val)
+        losses[m] = loss(ϕₘ, x)
+        val_losses[m] = loss(ϕₘ_val, x_val)
+    end
+    (model = model, ϕₘ = ϕₘ, loss=losses, val_losses = val_losses)
 end
 

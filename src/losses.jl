@@ -7,7 +7,7 @@ should not have branches depending on the input.
 
 """
 Calculate the loss given a parameterisation specified by Abstractϕ. If matrices
-are used, reduction is carried out using the mean.
+are used, reduction is carried out using summation.
 """
 function loss(
     parameterisation::Abstractϕ,
@@ -15,7 +15,7 @@ function loss(
     x::AbstractMatrix{<: Real}
     )
     l = map((ϕᵢ, xᵢ) -> loss(parameterisation, ϕᵢ, xᵢ), eachrow(ϕ), eachrow(x))
-    return mean(l)
+    return sum(l)
 end
 
 function loss(

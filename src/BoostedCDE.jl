@@ -8,10 +8,11 @@ using LinearAlgebra
 using Random
 using Random: default_rng, AbstractRNG
 using StatsBase
-using StatsBase: mean
+using StatsBase: mean, std
 using UnPack
 
 include("utils.jl")
+export StandardScaler, scale, unscale
 
 include("parameters.jl")
 export MeanCholeskyMvn, get_params
