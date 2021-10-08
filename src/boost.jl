@@ -71,18 +71,16 @@ end
 
 """
 Step the boosting model, by adding on a single new base model that minimizes the
-inner loss. The loss function should take ϕ and x and return a scaler.
+inner loss. u is the gradient matrix with shape matching ϕ, i.e. N×J where N is
+the number observations/simulations, and J is the number of distributional
+parameters.
 $(SIGNATURES)
 """
 function step!(
     model::BoostingModel,
     θ::AbstractMatrix{Float64},
-    x::AbstractMatrix{Float64},
-    ϕₘ::AbstractMatrix{Float64};
-    loss::Function)
+    u::AbstractMatrix{Float64})
     @unpack base_learners, base_learners_selected, jk = model
-    u = ReverseDiff.gradient(ϕₘ -> loss(ϕₘ, x), ϕₘ)
-
     local best_bl, best_jk
     best_inner_loss = Inf
     for j in 1:length(base_learners)
@@ -92,7 +90,7 @@ function step!(
             θₖ = @view θ[:, k]  # TODO Change from ID Dict? This creates a new view each step messing up IDDict. Could make step take in cols views as arguments but that seems a bit dumb?
             fit!(blⱼₖ, θₖ, uⱼ)
             ûⱼ = predict(blⱼₖ, θₖ)
-            inner_lossⱼₖ = norm(ûⱼ - uⱼ) - norm(uⱼ)  # bad predictor (e.g. predicting mean), sum_of_squares(ûⱼ - uⱼ) ≈  worst would be right small, left big
+            inner_lossⱼₖ = norm(ûⱼ - uⱼ) - norm(uⱼ)
             if inner_lossⱼₖ < best_inner_loss
                 best_bl = deepcopy(blⱼₖ)
                 best_jk = (j, k)
@@ -104,19 +102,6 @@ function step!(
     push!(jk, best_jk)
     return model
 end
-
-# """
-# Finds the best base model from candidate models and add it to the boosting
-# model.
-# """
-# function _step!()
-
-
-# end
-# get_best_model!
-
-
-
 
 
 """
@@ -133,7 +118,8 @@ function boost!(
     ϕₘ = predict(model, θ)  # ϕ₀ if untrained
     losses = zeros(steps)
     for m in 1:steps
-        step!(model, θ, x, ϕₘ, loss = loss)
+        u = ReverseDiff.gradient(ϕₘ -> loss(ϕₘ, x), ϕₘ)
+        step!(model, θ, u)
         ϕₘ = predict(model, θ, ϕₘ)
         losses[m] = loss(ϕₘ, x)
     end
@@ -157,7 +143,8 @@ function boost!(
     losses = zeros(steps)
     val_losses = zeros(steps)
     for m in 1:steps
-        step!(model, θ, x, ϕₘ, loss = loss)
+        u = ReverseDiff.gradient(ϕₘ -> loss(ϕₘ, x), ϕₘ)
+        step!(model, θ, u)
         ϕₘ = predict(model, θ, ϕₘ)
         ϕₘ_val = predict(model, θ_val, ϕₘ_val)
         losses[m] = loss(ϕₘ, x)

@@ -9,7 +9,7 @@ using StatsBase: mean, std
     scaler = StandardScaler(x)
     scaler.μ ≈ [4, 8]
     scaler.σ ≈ [2, 4]
-    x_scaled = scale(scaler, x)
+    x_scaled = scaler(x)
     x_unscaled = unscale(scaler, x_scaled)
     @test x ≈ x_unscaled
     @test mean.(eachcol(x_scaled)) ≈ [0,0]

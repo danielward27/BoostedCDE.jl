@@ -1,6 +1,7 @@
 using BoostedCDE
 using Test
 using LinearAlgebra
+using ReverseDiff
 
 
 # Test using basic vector api
@@ -24,7 +25,8 @@ using LinearAlgebra
  
     # Check loss decreases
     init_loss = ρ(ϕₘ, x)
-    step!(model, θ, x, ϕₘ; loss=ρ)
+    u = ReverseDiff.gradient(ϕₘ -> ρ(ϕₘ, x), ϕₘ)
+    step!(model, θ, u)
     ϕₘ = predict(model, θ)
     loss2 = ρ(ϕₘ, x)
     @test loss2 < init_loss
@@ -32,14 +34,16 @@ using LinearAlgebra
     # Reset and retrain should get to same solution
     reset!(model)
     ϕₘ = predict(model, θ)
-    step!(model, θ, x, ϕₘ; loss=ρ)
+    u = ReverseDiff.gradient(ϕₘ -> ρ(ϕₘ, x), ϕₘ)
+    step!(model, θ, u)
     ϕₘ = predict(model, θ)
     loss2_reset = ρ(ϕₘ, x)
     @test loss2_reset ≈ loss2
 
     # Test predict providing previous ϕ works as expected
     prev_ϕ = predict(model, θ)
-    step!(model, θ, x, ϕₘ; loss=ρ)
+    u = ReverseDiff.gradient(ϕₘ -> ρ(ϕₘ, x), ϕₘ)
+    step!(model, θ, u)
     @test predict(model, θ, prev_ϕ) == predict(model, θ)
 
     # Test step 5 + step 5 == step 10
