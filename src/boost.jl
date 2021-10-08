@@ -95,7 +95,7 @@ function step!(
             θₖ = @view θ[:, k]  # TODO Change from ID Dict? This creates a new view each step messing up IDDict. Could make step take in cols views as arguments but that seems a bit dumb?
             fit!(blⱼₖ, θₖ, uⱼ)
             ûⱼ = predict(blⱼₖ, θₖ)
-            inner_lossⱼₖ = var(ûⱼ - uⱼ) - var(uⱼ)
+            inner_lossⱼₖ = norm(ûⱼ - uⱼ) - norm(uⱼ)  # bad predictor (e.g. predicting mean), sum_of_squares(ûⱼ - uⱼ) ≈  worst would be right small, left big
             if inner_lossⱼₖ < best_inner_loss
                 best_bl = deepcopy(blⱼₖ)
                 best_jk = (j, k)

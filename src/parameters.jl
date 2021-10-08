@@ -17,7 +17,7 @@ function get_params(
     parameterisation::MeanCholeskyMvn,
     ϕ::AbstractVector{<: Real})
     @unpack d = parameterisation
-    length(ϕ) == d*(d+1) ÷ 2 + d || throw(ArgumentError("Invalid ϕ length."))
+    length(ϕ) == d*(d+1)÷2+d || throw(ArgumentError("length(ϕ) should be $(d*(d+1)÷2+d)."))
     μ = @view ϕ[1:d]
     U = @view ϕ[d+1:end]
     U = unvectorize(UpperTriangular, U)

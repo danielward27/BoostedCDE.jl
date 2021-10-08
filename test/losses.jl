@@ -16,7 +16,7 @@ using ReverseDiff
     expected = -logpdf(d, x)
     
     @test loss(parameterisation, ϕ, x) ≈ expected
-    @test loss(parameterisation, [ϕ ϕ]', [x x]') ≈ expected
+    @test loss(parameterisation, [ϕ ϕ]', [x x]') ≈ expected*2
 end
 
 @testset "MeanCholeskyMvn gradients" begin
