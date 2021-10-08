@@ -12,7 +12,7 @@ using StatsBase: mean, std
 using UnPack
 
 include("utils.jl")
-export StandardScaler, scale, unscale
+export StandardScaler, unscale
 
 include("parameters.jl")
 export MeanCholeskyMvn, get_params

@@ -81,17 +81,14 @@ function step!(
     ϕₘ::AbstractMatrix{Float64};
     loss::Function)
     @unpack base_learners, base_learners_selected, jk = model
-    J = length(base_learners)
-
-    K = size(θ, 2)
     u = ReverseDiff.gradient(ϕₘ -> loss(ϕₘ, x), ϕₘ)
 
-    local best_bl, best_jk, best_update
+    local best_bl, best_jk
     best_inner_loss = Inf
-    for j in 1:J
+    for j in 1:length(base_learners)
         blⱼₖ = base_learners[j]
         uⱼ = @view u[:, j]
-        for k in 1:K
+        for k in 1:size(θ, 2)
             θₖ = @view θ[:, k]  # TODO Change from ID Dict? This creates a new view each step messing up IDDict. Could make step take in cols views as arguments but that seems a bit dumb?
             fit!(blⱼₖ, θₖ, uⱼ)
             ûⱼ = predict(blⱼₖ, θₖ)
@@ -107,6 +104,19 @@ function step!(
     push!(jk, best_jk)
     return model
 end
+
+# """
+# Finds the best base model from candidate models and add it to the boosting
+# model.
+# """
+# function _step!()
+
+
+# end
+# get_best_model!
+
+
+
 
 
 """
@@ -155,4 +165,6 @@ function boost!(
     end
     (model = model, ϕₘ = ϕₘ, loss=losses, val_losses = val_losses)
 end
+
+
 
