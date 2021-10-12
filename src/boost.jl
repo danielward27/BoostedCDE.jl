@@ -25,12 +25,15 @@ struct BoostingModel{T <: Vector{<: BaseLearner}}
     end
 end
 
+BoostingModel(;init_ϕ, base_learners, η=0.1) = BoostingModel(init_ϕ, base_learners; η)
+
+
 """
 "Reset" the boosting model, removing all the selected base learners and corresponding indices.
 """
 function reset!(model::BoostingModel)
     @unpack base_learners_selected, jk = model
-    [deleteat!(x, 1:length(x)) for x in [base_learners_selected, jk]]
+    [empty!(a) for a in [base_learners_selected, jk]]
     return model
 end
 
@@ -171,11 +174,14 @@ function boostcv!(
         step!(model, train.θ, u)
         for tv in (train, val)
             tv.ϕₘ .= predict(model, tv.θ, tv.ϕₘ)
-            tv.loss .= loss(tv.ϕₘ, tv.x)
+            tv.loss[m] = loss(tv.ϕₘ, tv.x)
         end
         patience = m > 1 && val.loss[m] > val.loss[m-1] ? patience + 1 : 0
         if patience == max_patience
             print("Max patience ($(max_patience)) reached on iteration $(m).")
+            if m != steps
+                [deleteat!(l, (m+1):length(l)) for l in (train.loss, val.loss)]
+            end
             break
         end 
     end
