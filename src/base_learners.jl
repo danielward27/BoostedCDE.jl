@@ -13,7 +13,7 @@ cost of increased memory usage. An IdDict is used as the cache.
 $(SIGNATURES)
 """
 struct PolyBaseLearner <: BaseLearner
-    degree::Int64
+    degree::Int
     β::Vector{Float64}
     use_cache::Bool
     _cache::IdDict{Any, LinearAlgebra.QRCompactWY{Float64, Matrix{Float64}}}
@@ -54,7 +54,7 @@ Predict the negative gradient vector using θ.
 $(SIGNATURES)
 """
 function predict(base_learner::PolyBaseLearner, θ::AbstractVector)
-    poly_θ = [θ.^p for p in 0:base_learner.degree]
+    poly_θ = [θ.^p for p in 0:base_learner.degree]  # TODO This is now the bottleneck.
     poly_θ = reduce(hcat, poly_θ)
     return poly_θ * base_learner.β
 end

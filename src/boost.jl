@@ -15,13 +15,13 @@ struct BoostingModel{T <: Vector{<: BaseLearner}}
     "Base learners selected during training."
     base_learners_selected::T
     "The indices corresponding to the selected base learners (j=ϕ tuple idx, k=element of ϕ[j], l=θ idx))."
-    jk::Vector{Tuple{Int64, Int64}}
+    jk::Vector{Tuple{Int, Int}}
 
     BoostingModel(init_ϕ, base_learners; η=0.1) = begin
         length(init_ϕ) == length(base_learners) || throw(ArgumentError("Mismatch between ϕ length and number of base learners."))
         new{typeof(base_learners)}(
             init_ϕ, base_learners, η, BaseLearner[],
-            Tuple{Int64, Int64}[])
+            Tuple{Int, Int}[])
     end
 end
 
@@ -31,6 +31,7 @@ end
 function reset!(model::BoostingModel)
     @unpack base_learners_selected, jk = model
     [deleteat!(x, 1:length(x)) for x in [base_learners_selected, jk]]
+    return model
 end
 
 """
@@ -83,6 +84,43 @@ function step!(
     @unpack base_learners, base_learners_selected, jk = model
     local best_bl, best_jk
     best_inner_loss = Inf
+    u_norms = norm.(eachcol(u))
+    norm_rank_idx = sortperm(u_norms, rev=true)
+    for j in norm_rank_idx
+        # No need to fit base learner if perfect predictor can't do better
+        -u_norms[j] > best_inner_loss && continue
+        blⱼₖ = base_learners[j]
+        uⱼ = @view u[:, j]
+
+        for k in 1:size(θ, 2)
+            θₖ = @view θ[:, k]  # TODO Change from ID Dict? This creates a new view each step messing up IDDict. Could make step take in cols views as arguments but that seems a bit dumb?
+            fit!(blⱼₖ, θₖ, uⱼ)
+            ûⱼ = predict(blⱼₖ, θₖ)
+            inner_lossⱼₖ = -(u_norms[j] - norm(ûⱼ - uⱼ))
+            if inner_lossⱼₖ < best_inner_loss
+                best_bl = deepcopy(blⱼₖ)
+                best_jk = (j, k)
+                best_inner_loss = inner_lossⱼₖ
+            end
+        end
+    end
+    push!(base_learners_selected, best_bl)
+    push!(jk, best_jk)
+    return model
+end
+
+
+"""
+As for [`step!`](@ref), but without skipping training base models where
+inner_loss cannot be improved. 
+"""
+function step_naive!(
+    model::BoostingModel,
+    θ::AbstractMatrix{Float64},
+    u::AbstractMatrix{Float64})
+    @unpack base_learners, base_learners_selected, jk = model
+    local best_bl, best_jk
+    best_inner_loss = Inf
     for j in 1:length(base_learners)
         blⱼₖ = base_learners[j]
         uⱼ = @view u[:, j]
@@ -105,53 +143,77 @@ end
 
 
 """
-Fit a boosting model by performing M steps. Returns the model,
-predictions and losses from each training iteration.
+Boosting with cross validation and patience. `loss` should take `ϕ` and `x`,
+returning a scalar. `∇loss` should take `ϕ` (i.e. `x_train` should be
+abstracted away), returning matrix with size matching `ϕ`. `data` should be an
+object that can be unpacked/destructured to (θ_train, θ_val, x_train, x_val),
+e.g. NamedTuple resulting from [`train_val_split`](@ref). Returns a NamedTuple
+of results.
+
+If ∇loss is not provided, by default, the gradient is found using ReverseDiff,
+using ReverseDiff.GradientTape.
+$(SIGNATURES)
+"""
+function boostcv!(
+    model::BoostingModel,
+    data::Any;
+    steps::Int,
+    loss::Function,
+    ∇loss::Function = get_tape_∇(loss, predict(model, data.θ_train), data.x_train),
+    step!::Function = step!,
+    max_patience::Int=5)
+    @unpack θ_train, θ_val, x_train, x_val = data
+    train = (ϕₘ=predict(model, θ_train), loss=zeros(steps), θ=θ_train, x=x_train)
+    val = (ϕₘ=predict(model, θ_val), loss=zeros(steps), θ=θ_val, x=x_val)
+    patience = 0
+    for m in 1:steps
+        u = ∇loss(train.ϕₘ)    
+        step!(model, train.θ, u)
+        for tv in (train, val)
+            tv.ϕₘ .= predict(model, tv.θ, tv.ϕₘ)
+            tv.loss .= loss(tv.ϕₘ, tv.x)
+        end
+        patience = m > 1 && val.loss[m] > val.loss[m-1] ? patience + 1 : 0
+        if patience == max_patience
+            print("Max patience ($(max_patience)) reached on iteration $(m).")
+            break
+        end 
+    end
+    return (model = model, train = train, val = val)
+end
+
+"""
+Gradient function with tape, specialised on θ and x (usually training data). 
+"""
+function get_tape_∇(
+    loss::Function,
+    ϕₘ::AbstractMatrix{Float64},
+    x::AbstractMatrix{Float64})
+    tape = GradientTape(ϕₘ -> loss(ϕₘ, x), ϕₘ)
+    tape = ReverseDiff.compile(tape)
+    return ϕₘ -> gradient!(tape, ϕₘ)
+end
+
+"""
+Minimal function to fit a boosting model.
+`loss` should take ϕ and x as arguments, and ∇loss should just take ϕ.
 $(SIGNATURES)
 """
 function boost!(
     model::BoostingModel,
     θ::AbstractMatrix{Float64},
     x::AbstractMatrix{Float64};
+    steps::Int,
     loss::Function,
-    steps::Int)
+    ∇loss::Function = get_tape_∇(loss, predict(model, θ), x),
+    step!::Function = step!)
     ϕₘ = predict(model, θ)  # ϕ₀ if untrained
     losses = zeros(steps)
     for m in 1:steps
-        u = ReverseDiff.gradient(ϕₘ -> loss(ϕₘ, x), ϕₘ)
+        u = ∇loss(ϕₘ)
         step!(model, θ, u)
         ϕₘ = predict(model, θ, ϕₘ)
         losses[m] = loss(ϕₘ, x)
     end
     (model = model, ϕₘ = ϕₘ, loss=losses)
 end
-
-
-"""
-Boosting with tracking of validation error.
-"""
-function boost!(
-    model::BoostingModel,
-    θ::AbstractMatrix{Float64},
-    x::AbstractMatrix{Float64},
-    θ_val::AbstractMatrix{Float64},
-    x_val::AbstractMatrix{Float64};
-    loss::Function,
-    steps::Int)
-    ϕₘ = predict(model, θ)  # ϕ₀ if untrained
-    ϕₘ_val = predict(model, θ_val)  # ϕ₀ if untrained
-    losses = zeros(steps)
-    val_losses = zeros(steps)
-    for m in 1:steps
-        u = ReverseDiff.gradient(ϕₘ -> loss(ϕₘ, x), ϕₘ)
-        step!(model, θ, u)
-        ϕₘ = predict(model, θ, ϕₘ)
-        ϕₘ_val = predict(model, θ_val, ϕₘ_val)
-        losses[m] = loss(ϕₘ, x)
-        val_losses[m] = loss(ϕₘ_val, x_val)
-    end
-    (model = model, ϕₘ = ϕₘ, loss=losses, val_losses = val_losses)
-end
-
-
-

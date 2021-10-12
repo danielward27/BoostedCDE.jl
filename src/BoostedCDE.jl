@@ -4,6 +4,7 @@ import Base.@kwdef
 using Distributions
 using DocStringExtensions
 using ReverseDiff
+using ReverseDiff: AbstractTape, GradientTape, gradient!, gradient
 using LinearAlgebra
 using Random
 using Random: default_rng, AbstractRNG
@@ -30,6 +31,6 @@ include("boost.jl")
 export BoostingModel, boost!, step!, reset!
 
 include("losses.jl")
-export loss
+export cost
 
 end

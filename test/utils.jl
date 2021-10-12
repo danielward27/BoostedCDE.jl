@@ -15,3 +15,13 @@ using StatsBase: mean, std
     @test mean.(eachcol(x_scaled)) ≈ [0,0]
     @test std.(eachcol(x_scaled)) ≈ [1,1]
 end
+
+@testset "train_val_split" begin
+    θ = rand(10, 3)
+    x = rand(10, 4)
+    data = BoostedCDE.train_val_split(θ, x, 0.8)
+    @test size(data.θ_train) == (8, 3)
+    @test size(data.θ_val) == (2, 3)
+    @test size(data.x_train) == (8, 4)
+    @test size(data.x_val) == (2, 4)
+end

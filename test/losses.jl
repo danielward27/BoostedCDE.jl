@@ -15,8 +15,8 @@ using ReverseDiff
     d = MvNormalCanon(h, Λ)
     expected = -logpdf(d, x)
     
-    @test loss(parameterisation, ϕ, x) ≈ expected
-    @test loss(parameterisation, [ϕ ϕ]', [x x]') ≈ expected*2
+    @test cost(parameterisation, ϕ, x) ≈ expected
+    @test cost(parameterisation, [ϕ ϕ]', [x x]') ≈ expected*2
 end
 
 @testset "MeanCholeskyMvn gradients" begin
@@ -24,11 +24,10 @@ end
     ϕ = [0. 10  1 0 1; 0. 10  1 0 1]
     x = [0. 10; 5 5]
     parameterisation = MeanCholeskyMvn(2)
-    u = ReverseDiff.gradient(ϕ -> loss(parameterisation, ϕ, x), ϕ)
+    u = ReverseDiff.gradient(ϕ -> cost(parameterisation, ϕ, x), ϕ)
     @test u[1, 1:2] == [0, 0]
     @test u[2, 1:2] != [0, 0]
     @test u[2, 1] == -u[2, 2]
 end
 
-
-
+#TODO for each parameterisation test that gradient tape loss ≈ finite difference?
