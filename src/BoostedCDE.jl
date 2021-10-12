@@ -13,7 +13,7 @@ using StatsBase: mean, std
 using UnPack
 
 include("utils.jl")
-export StandardScaler, unscale
+export StandardScaler, unscale, train_val_split
 
 include("parameters.jl")
 export MeanCholeskyMvn, get_params
@@ -28,7 +28,7 @@ include("base_learners.jl")
 export BaseLearner, ConstBaseLearner, PolyBaseLearner, fit!, predict
 
 include("boost.jl")
-export BoostingModel, boost!, step!, reset!
+export BoostingModel, boost!, boostcv!, step!, reset!
 
 include("losses.jl")
 export cost
