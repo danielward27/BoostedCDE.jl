@@ -6,9 +6,9 @@ function check_cache_speedup(use_cache::Bool)
     bl = PolyBaseLearner(2; use_cache)
     u = rand(100)
     for i in 1:5
-        θₖ = rand(100)
+        xₖ = rand(100)
         for i in 1:100
-            fit!(bl, θₖ, u)
+            fit!(bl, xₖ, u)
         end
     end
 end

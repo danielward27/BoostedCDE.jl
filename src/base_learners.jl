@@ -34,7 +34,6 @@ function fit!(
     x::AbstractVector,
     u::AbstractVector)
     @unpack degree, β, use_cache, _cache = base_learner
-    local qr_poly_x
     if use_cache & haskey(_cache, x)
         qr_poly_x = _cache[x]
     else

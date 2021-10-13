@@ -91,9 +91,9 @@ function step!(
         uⱼ = @view u[:, j]
 
         for k in 1:size(x, 2)
-            θₖ = @view x[:, k]  # TODO Change from ID Dict? This creates a new view each step messing up IDDict. Could make step take in cols views as arguments but that seems a bit dumb?
-            fit!(bl, θₖ, uⱼ)
-            ûⱼₖ = predict(bl, θₖ)
+            xₖ = @view x[:, k]  # TODO Change from ID Dict? This creates a new view each step messing up IDDict. Could make step take in cols views as arguments but that seems a bit dumb?
+            fit!(bl, xₖ, uⱼ)
+            ûⱼₖ = predict(bl, xₖ)
             norm_explained = u_norms[j] - norm(ûⱼₖ - uⱼ)  # (total-unexplained)
             if norm_explained > best_norm_explained
                 best_bl = deepcopy(bl)
@@ -107,6 +107,8 @@ function step!(
     push!(idx[:ϕ], best_idx[:ϕ])
     return model
 end
+
+# TODO Matrix method just has one line to eachcols and then
 
 """
 As for [`step!`](@ref), but without skipping training base models where
@@ -123,9 +125,9 @@ function step_naive!(
         bl = base_learners[j]
         uⱼ = @view u[:, j]
         for k in 1:size(x, 2)
-            θₖ = @view x[:, k]  # TODO Change from ID Dict? This creates a new view each step messing up IDDict. Could make step take in cols views as arguments but that seems a bit dumb?
-            fit!(bl, θₖ, uⱼ)
-            ûⱼ = predict(bl, θₖ)
+            xₖ = @view x[:, k]  # TODO Change from ID Dict? This creates a new view each step messing up IDDict. Could make step take in cols views as arguments but that seems a bit dumb?
+            fit!(bl, xₖ, uⱼ)
+            ûⱼ = predict(bl, xₖ)
             norm_explained = norm(uⱼ) - norm(ûⱼ - uⱼ)
             if norm_explained > best_norm_explained
                 best_bl = deepcopy(bl)
