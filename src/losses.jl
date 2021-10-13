@@ -4,7 +4,6 @@ GradientTape, i.e. types for ϕ must be general (e.g. <: Real), and the loss
 should not have branches depending on the input.
 """
 
-
 """
 Calculate the loss given a parameterisation specified by Abstractϕ. If matrices
 are used, reduction is carried out using summation.

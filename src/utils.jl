@@ -24,6 +24,7 @@ mutable struct StandardScaler
     end
 end
 
+
 """
 Transform a matrix using the scaler
 """

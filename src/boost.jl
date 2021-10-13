@@ -25,10 +25,7 @@ struct BoostingModel{T <: Vector{<: BaseLearner}}
     end
 end
 
-
-
 BoostingModel(;init_ϕ, base_learners, η=0.1) = BoostingModel(init_ϕ, base_learners; η)
-
 
 """
 "Reset" the boosting model, removing all the selected base learners and corresponding indices.
@@ -73,7 +70,6 @@ function predict(
     return ϕ
 end
 
-
 """
 Step the boosting model, by adding on a single new base model that minimizes the
 gradient norm explained. u is the gradient matrix with shape matching ϕ, i.e.
@@ -112,7 +108,6 @@ function step!(
     return model
 end
 
-
 """
 As for [`step!`](@ref), but without skipping training base models where
 the norm explained cannot be improved. 
@@ -144,7 +139,6 @@ function step_naive!(
     push!(idx[:ϕ], best_idx[:ϕ])
     return model
 end
-
 
 """
 Boosting with cross validation and patience. `loss` should take `ϕ` and `y`,

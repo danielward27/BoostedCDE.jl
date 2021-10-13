@@ -19,7 +19,6 @@ macro loopify(simulator, x_dim)
     end
 end
 
-
 """
 Simulate a three dimensional Gaussian mean vector x. The covariance is diagonal,
 and fixed to σ=0.1. Parameter vector x is the mean vector of the Gaussian.
@@ -36,8 +35,6 @@ end
 @loopify gaussian_simulator 3
 gaussian_simulator(x::AbstractVector{Float64}) = gaussian_simulator(default_rng(), x)
 gaussian_simulator(x::AbstractMatrix{Float64}) = gaussian_simulator(default_rng(), x)
-
-
 
 """
 Simulator that applies simple linear transformation of x to get ϕ.
