@@ -91,7 +91,7 @@ function step!(
         uⱼ = @view u[:, j]
 
         for k in 1:size(x, 2)
-            xₖ = @view x[:, k]  # TODO Change from ID Dict? This creates a new view each step messing up IDDict. Could make step take in cols views as arguments but that seems a bit dumb?
+            xₖ = @view x[:, k]
             fit!(bl, xₖ, uⱼ)
             ûⱼₖ = predict(bl, xₖ)
             norm_explained = u_norms[j] - norm(ûⱼₖ - uⱼ)  # (total-unexplained)
@@ -108,11 +108,12 @@ function step!(
     return model
 end
 
-# TODO Matrix method just has one line to eachcols and then
 
+# TODO Update docs below
 """
-As for [`step!`](@ref), but without skipping training base models where
-the norm explained cannot be improved. 
+As for [`step!`](@ref), but without skipping training base models where the norm
+explained cannot be improved. x is an iterator over the columns of the x matrix
+i.e. `eachcol(x)` (using the iterator allows easier of caching of results).
 """
 function step_naive!(
     model::BoostingModel,
@@ -127,8 +128,8 @@ function step_naive!(
         for k in 1:size(x, 2)
             xₖ = @view x[:, k]  # TODO Change from ID Dict? This creates a new view each step messing up IDDict. Could make step take in cols views as arguments but that seems a bit dumb?
             fit!(bl, xₖ, uⱼ)
-            ûⱼ = predict(bl, xₖ)
-            norm_explained = norm(uⱼ) - norm(ûⱼ - uⱼ)
+            ûⱼₖ = predict(bl, xₖ)
+            norm_explained = norm(ûⱼₖ) - norm(ûⱼₖ - uⱼ)
             if norm_explained > best_norm_explained
                 best_bl = deepcopy(bl)
                 best_idx = (ϕ=j, x=k)
@@ -141,6 +142,7 @@ function step_naive!(
     push!(idx[:ϕ], best_idx[:ϕ])
     return model
 end
+
 
 """
 Boosting with cross validation and patience. `loss` should take `ϕ` and `y`,
