@@ -15,15 +15,17 @@ struct BoostingModel{T <: Vector{<: BaseLearner}}
     "Base learners selected during training."
     base_learners_selected::T
     "The indices corresponding to the selected base learners."
-    idx::NamedTuple{(:ϕ, :θ), Tuple{Vector{Int64}, Vector{Int64}}}
+    idx::NamedTuple{(:ϕ, :x), Tuple{Vector{Int64}, Vector{Int64}}}
 
     BoostingModel(init_ϕ, base_learners; η=0.1) = begin
         length(init_ϕ) == length(base_learners) || throw(ArgumentError("Mismatch between ϕ length and number of base learners."))
         new{typeof(base_learners)}(
             init_ϕ, base_learners, η, BaseLearner[],
-            (ϕ=Int[], θ=Int[]))
+            (ϕ=Int[], x=Int[]))
     end
 end
+
+
 
 BoostingModel(;init_ϕ, base_learners, η=0.1) = BoostingModel(init_ϕ, base_learners; η)
 
@@ -33,7 +35,7 @@ BoostingModel(;init_ϕ, base_learners, η=0.1) = BoostingModel(init_ϕ, base_lea
 """
 function reset!(model::BoostingModel)
     @unpack base_learners_selected, idx = model
-    [empty!(a) for a in [base_learners_selected, idx[:ϕ], idx[:θ]]]
+    [empty!(a) for a in [base_learners_selected, idx[:ϕ], idx[:x]]]
     return model
 end
 
@@ -42,12 +44,12 @@ Predict using the boosting model to get the conditional distributional
 parameters.
 $(SIGNATURES)
 """
-function predict(model::BoostingModel, θ::AbstractMatrix{Float64})
+function predict(model::BoostingModel, x::AbstractMatrix{Float64})
     @unpack base_learners_selected, η, init_ϕ, idx = model
-    ϕ = zeros(size(θ, 1), length(init_ϕ)) .+ init_ϕ'
+    ϕ = zeros(size(x, 1), length(init_ϕ)) .+ init_ϕ'
 
     for m in 1:length(base_learners_selected)
-        ûⱼₖ = predict(base_learners_selected[m], θ[:, idx[:θ][m]])
+        ûⱼₖ = predict(base_learners_selected[m], x[:, idx[:x][m]])
         ϕ[:, idx[:ϕ][m]] .-= η*ûⱼₖ
     end
     return ϕ
@@ -61,12 +63,12 @@ $(SIGNATURES)
 """
 function predict(
     model::BoostingModel,
-    θ::AbstractMatrix{Float64},
+    x::AbstractMatrix{Float64},
     last_ϕ::AbstractMatrix{Float64})
     @unpack base_learners_selected, η, idx = model
     ϕ = last_ϕ
     bl = base_learners_selected[end]
-    ûⱼₖ = predict(bl, θ[:, idx[:θ][end]])
+    ûⱼₖ = predict(bl, x[:, idx[:x][end]])
     ϕ[:, idx[:ϕ][end]] .-= η*ûⱼₖ
     return ϕ
 end
@@ -80,7 +82,7 @@ distributional parameters. $(SIGNATURES)
 """
 function step!(
     model::BoostingModel,
-    θ::AbstractMatrix{Float64},
+    x::AbstractMatrix{Float64},
     u::AbstractMatrix{Float64})
     @unpack base_learners, base_learners_selected, idx = model
     local best_bl, best_idx
@@ -92,20 +94,20 @@ function step!(
         bl = base_learners[j]
         uⱼ = @view u[:, j]
 
-        for k in 1:size(θ, 2)
-            θₖ = @view θ[:, k]  # TODO Change from ID Dict? This creates a new view each step messing up IDDict. Could make step take in cols views as arguments but that seems a bit dumb?
+        for k in 1:size(x, 2)
+            θₖ = @view x[:, k]  # TODO Change from ID Dict? This creates a new view each step messing up IDDict. Could make step take in cols views as arguments but that seems a bit dumb?
             fit!(bl, θₖ, uⱼ)
             ûⱼₖ = predict(bl, θₖ)
             norm_explained = u_norms[j] - norm(ûⱼₖ - uⱼ)  # (total-unexplained)
             if norm_explained > best_norm_explained
                 best_bl = deepcopy(bl)
-                best_idx = (ϕ=j, θ=k)
+                best_idx = (ϕ=j, x=k)
                 best_norm_explained = norm_explained
             end
         end
     end
     push!(base_learners_selected, best_bl)
-    push!(idx[:θ], best_idx[:θ])
+    push!(idx[:x], best_idx[:x])
     push!(idx[:ϕ], best_idx[:ϕ])
     return model
 end
@@ -117,7 +119,7 @@ the norm explained cannot be improved.
 """
 function step_naive!(
     model::BoostingModel,
-    θ::AbstractMatrix{Float64},
+    x::AbstractMatrix{Float64},
     u::AbstractMatrix{Float64})
     @unpack base_learners, base_learners_selected, idx = model
     local best_bl, best_idx
@@ -125,30 +127,30 @@ function step_naive!(
     for j in 1:length(base_learners)
         bl = base_learners[j]
         uⱼ = @view u[:, j]
-        for k in 1:size(θ, 2)
-            θₖ = @view θ[:, k]  # TODO Change from ID Dict? This creates a new view each step messing up IDDict. Could make step take in cols views as arguments but that seems a bit dumb?
+        for k in 1:size(x, 2)
+            θₖ = @view x[:, k]  # TODO Change from ID Dict? This creates a new view each step messing up IDDict. Could make step take in cols views as arguments but that seems a bit dumb?
             fit!(bl, θₖ, uⱼ)
             ûⱼ = predict(bl, θₖ)
             norm_explained = norm(uⱼ) - norm(ûⱼ - uⱼ)
             if norm_explained > best_norm_explained
                 best_bl = deepcopy(bl)
-                best_idx = (ϕ=j, θ=k)
+                best_idx = (ϕ=j, x=k)
                 best_norm_explained = norm_explained
             end
         end
     end
     push!(base_learners_selected, best_bl)
-    push!(idx[:θ], best_idx[:θ])
+    push!(idx[:x], best_idx[:x])
     push!(idx[:ϕ], best_idx[:ϕ])
     return model
 end
 
 
 """
-Boosting with cross validation and patience. `loss` should take `ϕ` and `x`,
-returning a scalar. `∇loss` should take `ϕ` (i.e. `x_train` should be
+Boosting with cross validation and patience. `loss` should take `ϕ` and `y`,
+returning a scalar. `∇loss` should take `ϕ` (i.e. `y_train` should be
 abstracted away), returning matrix with size matching `ϕ`. `data` should be an
-object that can be unpacked/destructured to (θ_train, θ_val, x_train, x_val),
+object that can be unpacked/destructured to (x_train, x_val, y_train, y_val),
 e.g. NamedTuple resulting from [`train_val_split`](@ref). Returns a NamedTuple
 of results.
 
@@ -161,19 +163,19 @@ function boostcv!(
     data::Any;
     steps::Int,
     loss::Function,
-    ∇loss::Function = get_tape_∇(loss, predict(model, data.θ_train), data.x_train),
+    ∇loss::Function = get_tape_∇(loss, predict(model, data.x_train), data.y_train),
     step!::Function = step!,
     max_patience::Int=5)
-    @unpack θ_train, θ_val, x_train, x_val = data
-    train = (ϕₘ=predict(model, θ_train), loss=zeros(steps), θ=θ_train, x=x_train)
-    val = (ϕₘ=predict(model, θ_val), loss=zeros(steps), θ=θ_val, x=x_val)
+    @unpack x_train, x_val, y_train, y_val = data
+    train = (ϕₘ=predict(model, x_train), loss=zeros(steps), x=x_train, y=y_train)
+    val = (ϕₘ=predict(model, x_val), loss=zeros(steps), x=x_val, y=y_val)
     patience = 0
     for m in 1:steps
         u = ∇loss(train.ϕₘ)    
-        step!(model, train.θ, u)
+        step!(model, train.x, u)
         for tv in (train, val)
-            tv.ϕₘ .= predict(model, tv.θ, tv.ϕₘ)
-            tv.loss[m] = loss(tv.ϕₘ, tv.x)
+            tv.ϕₘ .= predict(model, tv.x, tv.ϕₘ)
+            tv.loss[m] = loss(tv.ϕₘ, tv.y)
         end
         patience = m > 1 && val.loss[m] > val.loss[m-1] ? patience + 1 : 0
         if patience == max_patience
@@ -188,37 +190,37 @@ function boostcv!(
 end
 
 """
-Gradient function with tape, specialised on θ and x (usually training data). 
+Gradient function with tape, specialised on x and y (usually training data). 
 """
 function get_tape_∇(
     loss::Function,
     ϕₘ::AbstractMatrix{Float64},
-    x::AbstractMatrix{Float64})
-    tape = GradientTape(ϕₘ -> loss(ϕₘ, x), ϕₘ)
+    y::AbstractMatrix{Float64})
+    tape = GradientTape(ϕₘ -> loss(ϕₘ, y), ϕₘ)
     tape = ReverseDiff.compile(tape)
     return ϕₘ -> gradient!(tape, ϕₘ)
 end
 
 """
 Minimal function to fit a boosting model.
-`loss` should take ϕ and x as arguments, and ∇loss should just take ϕ.
+`loss` should take ϕ and y as arguments, and ∇loss should just take ϕ.
 $(SIGNATURES)
 """
 function boost!(
     model::BoostingModel,
-    θ::AbstractMatrix{Float64},
-    x::AbstractMatrix{Float64};
+    x::AbstractMatrix{Float64},
+    y::AbstractMatrix{Float64};
     steps::Int,
     loss::Function,
-    ∇loss::Function = get_tape_∇(loss, predict(model, θ), x),
+    ∇loss::Function = get_tape_∇(loss, predict(model, x), y),
     step!::Function = step!)
-    ϕₘ = predict(model, θ)  # ϕ₀ if untrained
+    ϕₘ = predict(model, x)  # ϕ₀ if untrained
     losses = zeros(steps)
     for m in 1:steps
         u = ∇loss(ϕₘ)
-        step!(model, θ, u)
-        ϕₘ = predict(model, θ, ϕₘ)
-        losses[m] = loss(ϕₘ, x)
+        step!(model, x, u)
+        ϕₘ = predict(model, x, ϕₘ)
+        losses[m] = loss(ϕₘ, y)
     end
     (model = model, ϕₘ = ϕₘ, loss=losses)
 end

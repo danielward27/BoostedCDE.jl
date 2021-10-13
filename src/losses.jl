@@ -12,20 +12,20 @@ are used, reduction is carried out using summation.
 function cost(
     parameterisation::Abstractϕ,
     ϕ::AbstractMatrix{<: Real},
-    x::AbstractMatrix{<: Real}
+    y::AbstractMatrix{<: Real}
     )
-    l = map((ϕᵢ, xᵢ) -> cost(parameterisation, ϕᵢ, xᵢ), eachrow(ϕ), eachrow(x))
+    l = map((ϕᵢ, xᵢ) -> cost(parameterisation, ϕᵢ, xᵢ), eachrow(ϕ), eachrow(y))
     return sum(l)
 end
 
 function cost(
     parameterisation::MeanCholeskyMvn,
     ϕ::AbstractVector{<: Real},
-    x::AbstractVector{<: Real}
+    y::AbstractVector{<: Real}
     )
     @unpack d = parameterisation
     μ, U = get_params(parameterisation, ϕ)
     Λ = U'U
     log_det_Σ = -2*sum(log.(diag(U)))
-    return (1/2)*(d*log(2π) + log_det_Σ + (x-μ)'Λ*(x-μ))
+    return (1/2)*(d*log(2π) + log_det_Σ + (y-μ)'Λ*(y-μ))
 end

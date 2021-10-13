@@ -25,36 +25,36 @@ end
 
 
 """
-Fit the Base learner model to the negative gradient vector uⱼ using feature vector θ.
+Fit the Base learner model to the negative gradient vector uⱼ using feature vector x.
 $(SIGNATURES)
 """
 function fit!(
     base_learner::PolyBaseLearner,
-    θ::AbstractVector,
+    x::AbstractVector,
     u::AbstractVector)
     @unpack degree, β, use_cache, _cache = base_learner
-    local qr_poly_θ
-    if use_cache & haskey(_cache, θ)
-        qr_poly_θ = _cache[θ]
+    local qr_poly_x
+    if use_cache & haskey(_cache, x)
+        qr_poly_x = _cache[x]
     else
-        poly_θ = [θ.^p for p in 0:base_learner.degree]
-        poly_θ = reduce(hcat, poly_θ)
-        qr_poly_θ = qr(poly_θ)
+        poly_x = [x.^p for p in 0:base_learner.degree]
+        poly_x = reduce(hcat, poly_x)
+        qr_poly_x = qr(poly_x)
         if use_cache
-            _cache[θ] = qr_poly_θ
+            _cache[x] = qr_poly_x
         end
     end
     
-    β .= qr_poly_θ \ u
+    β .= qr_poly_x \ u
     return base_learner
 end
 
 """
-Predict the negative gradient vector using θ.
+Predict the negative gradient vector using x.
 $(SIGNATURES)
 """
-function predict(base_learner::PolyBaseLearner, θ::AbstractVector)
-    poly_θ = [θ.^p for p in 0:base_learner.degree]  # TODO This is now the bottleneck.
-    poly_θ = reduce(hcat, poly_θ)
-    return poly_θ * base_learner.β
+function predict(base_learner::PolyBaseLearner, x::AbstractVector)
+    poly_x = [x.^p for p in 0:base_learner.degree]  # TODO This is now the bottleneck.
+    poly_x = reduce(hcat, poly_x)
+    return poly_x * base_learner.β
 end
