@@ -133,8 +133,8 @@ end
 
     model,_,_ = boost!(model, θ, x; loss=loss2, steps = 10, step! = step!)
 
-    ϕ_idx = [j for (j,_) in model.jk]
-    θ_idx = [k for (_, k) in model.jk]
+    ϕ_idx = model.idx[:ϕ]
+    θ_idx = model.idx[:θ]
 
     @test sum(ϕ_idx.>5) == 0
     @test sum(θ_idx.>2) == 0

@@ -14,14 +14,14 @@ struct BoostingModel{T <: Vector{<: BaseLearner}}
     η::Float64
     "Base learners selected during training."
     base_learners_selected::T
-    "The indices corresponding to the selected base learners (j=ϕ tuple idx, k=element of ϕ[j], l=θ idx))."
-    jk::Vector{Tuple{Int, Int}}
+    "The indices corresponding to the selected base learners."
+    idx::NamedTuple{(:ϕ, :θ), Tuple{Vector{Int64}, Vector{Int64}}}
 
     BoostingModel(init_ϕ, base_learners; η=0.1) = begin
         length(init_ϕ) == length(base_learners) || throw(ArgumentError("Mismatch between ϕ length and number of base learners."))
         new{typeof(base_learners)}(
             init_ϕ, base_learners, η, BaseLearner[],
-            Tuple{Int, Int}[])
+            (ϕ=Int[], θ=Int[]))
     end
 end
 
@@ -32,8 +32,8 @@ BoostingModel(;init_ϕ, base_learners, η=0.1) = BoostingModel(init_ϕ, base_lea
 "Reset" the boosting model, removing all the selected base learners and corresponding indices.
 """
 function reset!(model::BoostingModel)
-    @unpack base_learners_selected, jk = model
-    [empty!(a) for a in [base_learners_selected, jk]]
+    @unpack base_learners_selected, idx = model
+    [empty!(a) for a in [base_learners_selected, idx[:ϕ], idx[:θ]]]
     return model
 end
 
@@ -43,12 +43,12 @@ parameters.
 $(SIGNATURES)
 """
 function predict(model::BoostingModel, θ::AbstractMatrix{Float64})
-    @unpack base_learners_selected, η, init_ϕ, jk = model
-    N, J = size(θ, 1), length(init_ϕ)
-    ϕ = zeros(N, J) .+ init_ϕ'
-    for (bl, (j, k)) in zip(base_learners_selected, jk)
-        ûⱼₖ = predict(bl, θ[:, k])
-        ϕ[:, j] .-= η*ûⱼₖ
+    @unpack base_learners_selected, η, init_ϕ, idx = model
+    ϕ = zeros(size(θ, 1), length(init_ϕ)) .+ init_ϕ'
+
+    for m in 1:length(base_learners_selected)
+        ûⱼₖ = predict(base_learners_selected[m], θ[:, idx[:θ][m]])
+        ϕ[:, idx[:ϕ][m]] .-= η*ûⱼₖ
     end
     return ϕ
 end
@@ -63,84 +63,83 @@ function predict(
     model::BoostingModel,
     θ::AbstractMatrix{Float64},
     last_ϕ::AbstractMatrix{Float64})
-    @unpack base_learners_selected, η, jk = model
+    @unpack base_learners_selected, η, idx = model
     ϕ = last_ϕ
-    j, k = jk[end]
     bl = base_learners_selected[end]
-    ûⱼₖ = predict(bl, θ[:, k])
-    ϕ[:, j] .-= η*ûⱼₖ
+    ûⱼₖ = predict(bl, θ[:, idx[:θ][end]])
+    ϕ[:, idx[:ϕ][end]] .-= η*ûⱼₖ
     return ϕ
 end
 
 
 """
 Step the boosting model, by adding on a single new base model that minimizes the
-inner loss. u is the gradient matrix with shape matching ϕ, i.e. N×J where N is
-the number observations/simulations, and J is the number of distributional
-parameters.
-$(SIGNATURES)
+gradient norm explained. u is the gradient matrix with shape matching ϕ, i.e.
+N×J where N is the number observations/simulations, and J is the number of
+distributional parameters. $(SIGNATURES)
 """
 function step!(
     model::BoostingModel,
     θ::AbstractMatrix{Float64},
     u::AbstractMatrix{Float64})
-    @unpack base_learners, base_learners_selected, jk = model
-    local best_bl, best_jk
-    best_inner_loss = Inf
+    @unpack base_learners, base_learners_selected, idx = model
+    local best_bl, best_idx
+    best_norm_explained = -Inf
     u_norms = norm.(eachcol(u))
-    norm_rank_idx = sortperm(u_norms, rev=true)
-    for j in norm_rank_idx
+    for j in sortperm(u_norms, rev=true)  # Biggest norms first
         # No need to fit base learner if perfect predictor can't do better
-        -u_norms[j] > best_inner_loss && continue
-        blⱼₖ = base_learners[j]
+        u_norms[j] < best_norm_explained && continue
+        bl = base_learners[j]
         uⱼ = @view u[:, j]
 
         for k in 1:size(θ, 2)
             θₖ = @view θ[:, k]  # TODO Change from ID Dict? This creates a new view each step messing up IDDict. Could make step take in cols views as arguments but that seems a bit dumb?
-            fit!(blⱼₖ, θₖ, uⱼ)
-            ûⱼ = predict(blⱼₖ, θₖ)
-            inner_lossⱼₖ = -(u_norms[j] - norm(ûⱼ - uⱼ))
-            if inner_lossⱼₖ < best_inner_loss
-                best_bl = deepcopy(blⱼₖ)
-                best_jk = (j, k)
-                best_inner_loss = inner_lossⱼₖ
+            fit!(bl, θₖ, uⱼ)
+            ûⱼₖ = predict(bl, θₖ)
+            norm_explained = u_norms[j] - norm(ûⱼₖ - uⱼ)  # (total-unexplained)
+            if norm_explained > best_norm_explained
+                best_bl = deepcopy(bl)
+                best_idx = (ϕ=j, θ=k)
+                best_norm_explained = norm_explained
             end
         end
     end
     push!(base_learners_selected, best_bl)
-    push!(jk, best_jk)
+    push!(idx[:θ], best_idx[:θ])
+    push!(idx[:ϕ], best_idx[:ϕ])
     return model
 end
 
 
 """
 As for [`step!`](@ref), but without skipping training base models where
-inner_loss cannot be improved. 
+the norm explained cannot be improved. 
 """
 function step_naive!(
     model::BoostingModel,
     θ::AbstractMatrix{Float64},
     u::AbstractMatrix{Float64})
-    @unpack base_learners, base_learners_selected, jk = model
-    local best_bl, best_jk
-    best_inner_loss = Inf
+    @unpack base_learners, base_learners_selected, idx = model
+    local best_bl, best_idx
+    best_norm_explained = -Inf
     for j in 1:length(base_learners)
-        blⱼₖ = base_learners[j]
+        bl = base_learners[j]
         uⱼ = @view u[:, j]
         for k in 1:size(θ, 2)
             θₖ = @view θ[:, k]  # TODO Change from ID Dict? This creates a new view each step messing up IDDict. Could make step take in cols views as arguments but that seems a bit dumb?
-            fit!(blⱼₖ, θₖ, uⱼ)
-            ûⱼ = predict(blⱼₖ, θₖ)
-            inner_lossⱼₖ = norm(ûⱼ - uⱼ) - norm(uⱼ)
-            if inner_lossⱼₖ < best_inner_loss
-                best_bl = deepcopy(blⱼₖ)
-                best_jk = (j, k)
-                best_inner_loss = inner_lossⱼₖ
+            fit!(bl, θₖ, uⱼ)
+            ûⱼ = predict(bl, θₖ)
+            norm_explained = norm(uⱼ) - norm(ûⱼ - uⱼ)
+            if norm_explained > best_norm_explained
+                best_bl = deepcopy(bl)
+                best_idx = (ϕ=j, θ=k)
+                best_norm_explained = norm_explained
             end
         end
     end
     push!(base_learners_selected, best_bl)
-    push!(jk, best_jk)
+    push!(idx[:θ], best_idx[:θ])
+    push!(idx[:ϕ], best_idx[:ϕ])
     return model
 end
 
