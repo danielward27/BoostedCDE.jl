@@ -85,13 +85,10 @@ function step!(
     best_norm_explained = -Inf
     u_norms = norm.(eachcol(u))
     for j in sortperm(u_norms, rev=true)  # Biggest norms first
-        # No need to fit base learner if perfect predictor can't do better
-        u_norms[j] < best_norm_explained && continue
+        u_norms[j] < best_norm_explained && continue  # No need to fit base learner if perfect predictor can't do better
         bl = base_learners[j]
         uⱼ = @view u[:, j]
-
-        for k in 1:size(x, 2)
-            xₖ = @view x[:, k]
+        for (k, xₖ) in enumerate(eachcol(x))
             fit!(bl, xₖ, uⱼ)
             ûⱼₖ = predict(bl, xₖ)
             norm_explained = u_norms[j] - norm(ûⱼₖ - uⱼ)  # (total-unexplained)
@@ -125,8 +122,7 @@ function step_naive!(
     for j in 1:length(base_learners)
         bl = base_learners[j]
         uⱼ = @view u[:, j]
-        for k in 1:size(x, 2)
-            xₖ = @view x[:, k]  # TODO Change from ID Dict? This creates a new view each step messing up IDDict. Could make step take in cols views as arguments but that seems a bit dumb?
+        for (k, xₖ) in enumerate(eachcol(x))
             fit!(bl, xₖ, uⱼ)
             ûⱼₖ = predict(bl, xₖ)
             norm_explained = norm(ûⱼₖ) - norm(ûⱼₖ - uⱼ)

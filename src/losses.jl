@@ -5,11 +5,11 @@ should not have branches depending on the input.
 """
 
 """
-Calculate the loss given a parameterisation specified by Abstractϕ. If matrices
+Calculate the loss given a parameterisation specified by Parameterisation. If matrices
 are used, reduction is carried out using summation.
 """
 function cost(
-    parameterisation::Abstractϕ,
+    parameterisation::Parameterisation,
     ϕ::AbstractMatrix{<: Real},
     y::AbstractMatrix{<: Real}
     )
